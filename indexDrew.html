@@ -1,0 +1,596 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="robots" content="noindex, nofollow" />
+		
+		<title>Statistics Reports for Iowa Digital Libraries</title>
+		
+		<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/overcast/jquery-ui.css" />
+		<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+		<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+		
+		<script src="jquery.tablesorter/jquery.tablesorter.min.js"></script>
+		<link rel="stylesheet" href="jquery.tablesorter/themes/blue/style.css" />
+		
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		
+		<script type="text/javascript">
+
+			var collections = [];
+			var table = [];
+			var subtitle = "";
+
+			$(function() {
+
+				$( "#tabs" ).tabs().hide();
+				$( "#radio" ).buttonset();
+				$( "#pageviews" ).click( function() {
+					document.getElementById( "bargraph" ).innerHTML = "";
+					bargraph( collections, "name", "pageviews", 'Collections - mouse over for collection name', 'Unique Pageviews' );
+				});
+				$( "#items" ).click( function() {
+					document.getElementById( "bargraph" ).innerHTML = "";
+					bargraph( collections, "name", "items", 'Collections - mouse over for collection name', 'Total Items' );
+				});
+				$( "#ppi" ).click( function() {
+					document.getElementById( "bargraph" ).innerHTML = "";
+					bargraph( collections, "name", "ppi", 'Collections - mouse over for collection name', 'Pageviews per Item' );
+				});
+				$( "#visitors" ).click( function() {
+					document.getElementById( "bargraph" ).innerHTML = "";
+					bargraph( collections, "name", "visitors", 'Collections - mouse over for collection name', 'Visitors' );
+				});
+			});
+
+			function populateDropdown() {
+				
+				$.ajax({
+					type: "POST",
+					url: "getReports.php",
+					data: {action: "digital_collections"},
+					dataType: "json",
+					success: function( data ) {
+						$.each( data, function( key, val ) {
+
+							if ( val != "." && val != ".." ) {
+								document.getElementById( "reports" ).innerHTML += 
+									"<option value='" + val + "'>" +
+									parseMonthAbbv( val ) + " " + parseYear( val ) +
+									"</option>";
+							}
+						});
+
+						return true;
+					},
+					error: function( xhr, textStatus, errorThrown ) {
+						console.log( xhr + " " + textStatus + " " + errorThrown );
+						return false;
+					}
+				});
+
+				$.ajax({
+					type: "POST",
+					url: "getReports.php",
+					data: {action: "finding_aids"},
+					dataType: "json",
+					success: function( data ) {
+						$.each( data, function( key, val ) {
+
+							if ( val != "." && val != ".." ) {
+								document.getElementById( "fa-reports" ).innerHTML += 
+									"<option value='" + val + "'>" +
+									parseMonthAbbv( val ) + " " + parseYear( val ) +
+									"</option>";
+							}
+						});
+
+						return true;
+					},
+					error: function( xhr, textStatus, errorThrown ) {
+						console.log( xhr + " " + textStatus + " " + errorThrown );
+						return false;
+					}
+				});
+			}
+
+			function parseYear( dateVal ) {
+				return dateVal.substring( 0, 4 );
+			}
+
+			function parseMonthNum( dateVal ) {
+				return dateVal.substring( 4, 6 );
+			}
+
+			function parseMonthAbbv( dateVal ) {
+			//this function receives a month as a numerical value and 
+			//returns the month as a three-letter abbreviation
+				
+				var month = parseMonthNum( dateVal );
+
+				switch( month ) {
+					case "01":
+						month = "Jan";
+						break;
+					case "02":
+						month = "Feb";
+						break;
+					case "03":
+						month = "Mar";
+						break;
+					case "04":
+						month = "Apr";
+						break;
+					case "05":
+						month = "May";
+						break;
+					case "06":
+						month = "Jun";
+						break;
+					case "07":
+						month = "Jul";
+						break;
+					case "08":
+						month = "Aug";
+						break;
+					case "09":
+						month = "Sep";
+						break;
+					case "10":
+						month = "Oct";
+						break;
+					case "11":
+						month = "Nov";
+						break;
+					case "12":
+						month = "Dec";
+						break;
+				}
+
+				return month;
+			}
+
+			function getReport( reportName, action ) {
+				//this function is called when the option in the dropdown menu changes
+
+				if ( reportName != "none" ) {
+
+					var filepath = "";
+
+					if ( action == "dc" ) {
+						filepath = "reports/digital_collections/" + reportName;
+					} else if ( action == "fa" ) {
+						filepath = "reports/finding_aids/" + reportName;
+					}
+
+					initiateCollectionsArray( filepath, action );
+				}
+			}
+
+			function initiateCollectionsArray( jsonSource, action ) {
+				//assumes: jsonSource is a filepath to a json file
+				//assumes: action indicates the type of report contianed within the file
+				//populate global collections array with the values from json file
+
+				//clear any data from previous queries
+				collections = [];
+
+				$.getJSON( jsonSource, function( data ) {  
+
+					$.each( data, function( collection, object ) {
+
+						$.each( object, function( num, obj ) {
+
+							var myItem = {};
+
+							$.each( obj, function( key, val ) {
+
+								myItem[ key ] = val;
+
+							});
+
+							collections.push( myItem );
+							
+						});
+
+					});
+				})
+				.done( function() {
+
+					if ( action == "dc" ) {
+						//assign default values for ppi
+						for ( var i = 0; i < collections.length; i++ ) {
+							collections[i][ "ppi" ] = 0;
+						}
+					}
+
+					console.log( "Collections array initated." );
+
+					printReport( action );
+				})
+				.fail( function() {
+					console.log( "Error: unable to read json file." )
+				});	
+			}
+
+			function printReport( action ) {
+
+				$( "#tabs" ).tabs().show(); //show results
+				table = []; //clear results from any previous request
+				
+				if ( action == "dc" ) {
+					calculatePPI(); 
+					$( "#radio" ).show();
+				} else if ( action == "fa" ) {
+					$( "#radio" ).hide();
+				}
+				 
+				sortCollectionsArray();
+				setSubtitle( action );
+				setTableHeaders( action );
+				setTableBody( action );
+				printTable();
+				printGraph();
+			}
+
+			function calculatePPI() {
+
+				//calculate pageviews per item
+				for ( var i = 0; i < collections.length; i++ ) {
+					var ppi;
+					if ( isNaN( collections[i][ "pageviews" ] ) ) {
+						ppi = 0;
+					} else {
+						ppi = collections[i][ "pageviews" ] / collections[i][ "items" ];
+					}
+					//create display-friendly ppi with 4 decimal places
+					ppi = ppi.toFixed(4);
+					
+					collections[i][ "ppi" ] = ppi;
+				}
+			}
+
+			function sortCollectionsArray() {
+
+				//sort collections array by pageviews
+				collections.sort( function( a, b ) {
+					return b[ "pageviews" ] - a[ "pageviews" ];
+				});
+			}
+
+			function setSubtitle( action ) {
+
+				var date = "";
+				var subtitle = "";
+
+				if ( action == "dc" ) {
+					date = $( "#reports option:selected" ).text();
+					subtitle = "<h2>Digital Collections: " + date + "</h2>";
+				} else if ( action == "fa" ) {
+					date = $( "#fa-reports option:selected" ).text();
+					subtitle = "<h2>Collection guides: " + date + "</h2>";
+				}
+
+				table.push( subtitle );
+				$( "#subtitle" ).html( subtitle );
+			}
+
+			function setTableHeaders( action ) {
+
+				var tableHeaders = "";
+
+				if ( action == "dc" ) {
+					tableHeaders = ['Collection','Pageviews<br/>(unique)','Total Items','Pageviews<br/>per Item','Visitors'];
+				} else if ( action == "fa" ) {
+					tableHeaders = ['Finding Aid', 'Pageviews<br/>(unique)', 'Archives'];
+				}
+				table.push( '<table class="tablesorter">' );
+				table.push( '<thead><tr>' );
+				for ( var i = 0; i < tableHeaders.length; i++ ) {
+					table.push( '<th>', tableHeaders[i], '</th>' );
+				}
+				table.push( '</thead></tr>' );
+			}
+
+			function setTableBody( action ) {
+
+				table.push( '<tbody>' );
+
+				for ( var i = 0; i < collections.length; i++ ) {
+
+					if ( action == "dc" ) {
+
+						var hyperlink = 'http://digital.lib.uiowa.edu/cdm/search/collection/' + collections[i][ "alias" ];
+				
+						table.push( '<tr>' );
+						table.push( '<td><a href="',hyperlink,'">',collections[i][ "name" ],'</a></td>'  ); //collection name
+						table.push( '<td class="num">',collections[i][ "pageviews" ],'</td>'  ); //pageviews
+						table.push( '<td class="num">',collections[i][ "items" ],'</td>'  ); //total items
+						table.push( '<td class="num">',collections[i][ "ppi" ],'</td>'  ); //pageviews per item
+						table.push( '<td class="num">',collections[i][ "visitors" ],'</td>'  ); //visitors
+						table.push( '</tr>' );
+
+					} else if ( action == "fa" ) {
+
+						if ( collections[i][ "name" ] && collections[i][ "name" ].length > 0 ) {
+
+							table.push( '<tr>' );
+							table.push( '<td>',collections[i][ "name" ],'</td>'  ); 
+							table.push( '<td class="num">',collections[i][ "pageviews" ],'</td>'  );
+							table.push( '<td class="num">',collections[i][ "archives" ],'</td>'  );
+							table.push( '</tr>' );
+
+						}					
+					}				
+				}				
+				table.push( '</tbody>' );
+			}
+
+			function printTable() {
+				table.push( '</table>' );
+				outputToPage( table.join('') );
+				
+				//initiate tablesorter feature
+				$( ".tablesorter" ).tablesorter({
+					sortList: [ [1,1] ], 
+					widgets: ['zebra']
+				});
+			}
+
+			/* Bar graph */
+
+			function printGraph() {
+				$( "#pageviews" ).click().button( "refresh" );
+			}
+
+			function bargraph( array, xIndex, yIndex, xAxisLabel, yAxisLabel ) {
+						
+				var margin = { top: 20, right: 20, bottom: 30, left: 80 };
+				var width = 1000 - margin.left - margin.right;
+				var height = 600 - margin.top - margin.bottom;
+
+				//var formatPercent = d3.format(".0%");
+
+				var x = d3.scale.ordinal()
+					.rangeRoundBands([0, width], .1);
+
+				var y = d3.scale.linear()
+					.range([height, 0]);
+
+				var xAxis = d3.svg.axis()
+					.scale(x)
+					.orient("bottom");
+
+				var yAxis = d3.svg.axis()
+					.scale(y)
+					.orient("left");
+
+				var svg = d3.select("#bargraph").append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+				  	.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+				
+				//tooltip
+				var div = d3.select("#bargraph").append("div")   
+					.attr("class", "tooltip")               
+					.style("opacity", 0);
+				
+				//if any values or array at yIndex are not numbers, change their value to 0
+				for ( var i = 0; i < array.length; i++ ) {
+					if ( isNaN( collections[i][yIndex] ) ) {
+						collections[i][yIndex] = 0;
+					}
+				}
+				
+				//sort array by yIndex
+				array = array.sort( function( a, b ) {
+					return b[yIndex] - a[yIndex];
+				});
+				
+				var yIndexMax = array[0][yIndex];
+				
+				x.domain( array.map( function(d){ return d[xIndex]; } ) );
+				y.domain( [0, yIndexMax ] );
+				//y.domain( [0, d3.max( array, function(d){ return d[yIndex]; } ) ] ); not working with Google API figures
+				
+				svg.append("g")
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + height + ")")
+				.append( "text" )
+					.attr( "y", 18 )
+					.attr( "x", 22 )
+					.style( "font", "14px sans-serif" )
+					.style( "font-weight", "bold" )
+					.text( xAxisLabel );
+				  
+				svg.append("g")
+					.attr("class", "y axis")
+					.call(yAxis) //get yAxis tick labels from array
+				.append("text")
+					.attr("transform", "rotate(-90)")
+					.attr("y", 6)
+					.attr("dy", ".71em")
+					.style("text-anchor", "end")
+					.style( "font", "14px sans-serif" )
+					.style( "font-weight", "bold" )
+					.text( yAxisLabel );
+				  
+				svg.selectAll(".bar")
+				  .data(array)
+				.enter().append("rect")
+				  .attr("class", "bar")
+				  .attr("x", function(d) { return x(d[xIndex]); })
+				  .attr("width", x.rangeBand())
+				  .attr("y", function(d) { return y(d[yIndex]); })
+				  .attr("height", function(d) { return height - y(d[yIndex]); })
+				  .on("mouseover", function(d) {
+					d3.select(this).style("fill", "orange");
+					div.transition()        
+						.duration( 200 )      
+						.style( "opacity", .9 );    
+					div.html( d[xIndex] + "<br/>" + d[yIndex] + " " + yAxisLabel )
+						.style( "left", ( d3.event.pageX ) + "px" )
+						.style( "top", ( d3.event.pageY - 200 ) + "px" );
+				  })
+				  .on("mouseout", function(d) {
+					d3.select(this).style("fill", "steelblue");
+					div.transition()
+						.duration( 500 )
+						.style( "opacity", 0 );
+				  });
+			}
+
+			function outputToPage( output ) {
+				document.getElementById( "outputDiv" ).innerHTML = output;
+			}
+			
+		</script>
+		
+		<style type="text/css">
+			body {
+				font-family: Arial;
+				margin: 0;
+				color: #3D3D3D;
+			}
+			#content {
+				margin: 20px;
+			}
+			#form {
+				margin-bottom: 20px;
+				text-align: center;
+			}
+			#form span {
+				margin-right: 5px;
+			}
+			#form select {
+				margin-right: 20px;
+			}
+			h1 {
+				padding: 20px;
+				text-align: center;
+				border-bottom: 10px solid #496b87;
+				background-color: #90b8da;
+				margin-top: 0;
+			}
+			h2 {
+				font-size: 1em;
+			}
+			button {
+				font-size: 1em !important;
+			}
+			#authorize {
+				text-align: center;
+			}
+
+			
+			/* Table */
+			
+			td.num {
+				text-align: right;
+			}
+			table a:link, table a:visited {
+				color: #3D3D3D;
+				text-decoration: none;
+			}
+			table a:hover {
+				text-decoration: underline;
+			}
+			
+			
+			/* Bar graph */
+			
+			.axis path, .axis line {
+				fill: none;
+				stroke: #000;
+				shape-rendering: crispEdges;
+			}
+			.bar {
+				fill: steelblue;
+			}
+			.x.axis path {
+				display: none;
+			}
+			div.tooltip {   
+				position: absolute;           
+				text-align: center;                           
+				padding: 2px;             
+				font: 12px sans-serif;        
+				background: lightsteelblue;   
+				border: 0px;      
+				border-radius: 8px;           
+				pointer-events: none;         
+			}
+			
+			/* Printer-friendly style */
+			
+			@media print {
+				h1 {
+					font-size: 16pt;
+				}
+				h2 {
+					display: block;
+					font-size: 14pt;
+				}
+				table {
+					font-size: 10pt;
+				}
+				#authorize-button, #form {
+					display: none;
+				}
+			}
+		</style>
+		
+	</head>
+	
+	<body onload="populateDropdown()">
+	
+		<h1>Statistics Report</h1>
+		
+		<div id="content">
+			
+			<div id="form">
+				<span style="margin-right: 3px">Digital collections: </span>
+				<select name="reports" id="reports" onchange="getReport( this.value, 'dc' )">
+					<option value="none" selected="selected">Select a report</option>
+				</select>
+				<div style="margin-top: 5px">
+				<span>Collection guides: </span>
+				<select name="fa-reports" id="fa-reports" onchange="getReport( this.value, 'fa' )">
+					<option value="none" selected="selected">Select a report</option>
+				</select></div>
+			</div>
+			
+			<div id="progress"></div>
+			
+			<div id="tabs">
+				<ul>
+					<li><a href="#outputDiv">Table</a></li>
+					<li><a href="#graph">Graph</a></li>
+					<li><a href="#exp">Explanation of Statistics</a></li>
+				</ul>
+			
+				<div id="outputDiv"></div>
+				
+				<div id="graph">
+					<div id="subtitle"></div>
+					<form id="radio">
+						<input type="radio" id="pageviews" name="radio" checked="checked" /><label for="pageviews">Pageviews (unique)</label>
+						<input type="radio" id="items" name="radio" /><label for="items">Total Items</label>
+						<input type="radio" id="ppi" name="radio" /><label for="ppi">Pageviews per Item</label>
+						<input type="radio" id="visitors" name="radio" /><label for="visitors">Visitors</label>
+					</form>
+					<div id="bargraph"></div>
+				</div>
+				
+				<div id="exp">
+					<p><strong>Pageviews (unique):</strong>  The number of times a page was viewed by an individual visitor.  A unique pageview aggregates pageviews that are generated by the same user during the same session. If a visitor clicks reload after reaching the page, this is NOT counted as an additional unique pageview.  If a visitor navigates to a different page and then returns to the original page, a second unique pageview is NOT recorded.</p>
+					<p><strong>Total Items:</strong>  The total number of items in a digital collection.</p>
+					<p><strong>Pageviews per Item:</strong>  The average number of times each item in the collection was viewed.  This statistic is calcualted by dividing unique pageviews by total items.</p>
+					<p><strong>Visitors:</strong>  The total number of unique users who viewed at least one item in the digital collection.</p>
+				</div>
+				
+			</div> <!-- /tabs -->
+		</div> <!-- /content -->
+	</body>
+</html>

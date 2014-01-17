@@ -1,0 +1,158 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="robots" content="noindex, nofollow" />
+		
+		<title>Admin - Statistics Reports for Iowa Digital Library</title>
+		
+		<script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
+		<script src="GoogleAnalyticsAPIAuthorization.js"></script>
+		<script src="MonthlyStats.js"></script>  
+		
+		<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/overcast/jquery-ui.css" />
+		<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+		<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+		
+		<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		
+		<script type="text/javascript">
+	
+			$(function() {
+
+				$( "#make-api-call-button, #authorize-button" ).button();
+				$( "#selectable" ).selectable({
+					selected: function() {
+						queryType = $( ".ui-selected" ).attr( "id" );
+						getOutstandingReports();
+						outputToPage( "" );
+						clearProgress();
+					}
+				});
+				$( "#dc" ).addClass( "ui-selected" );
+				getOutstandingReports();
+	
+			});
+			
+		</script>
+		
+		<style type="text/css">
+			body {
+				font-family: Arial;
+				margin: 0;
+				color: #3D3D3D;
+			}
+			#content {
+				margin: 20px;
+			}
+			#menu {
+				display: inline;
+				float:left;
+				margin-right: 50px;
+			}
+			#main {
+				display: inline;
+				float:left;
+			}
+			 #selectable .ui-selecting { 
+			 	background: #FECA40; 
+			 }
+			#selectable .ui-selected { 
+				background: #90b8da; 
+				color: white; 
+			}
+			#selectable { 
+				list-style-type: none; 
+				margin: 0; 
+				padding: 0; 
+			}
+			#selectable li { 
+				margin: 3px; 
+				padding: 0.4em; 
+				font-size: 1.4em; 
+				border: 1px solid #CCC;
+			}
+			#form {
+				margin-bottom: 20px;
+			}
+			#form span {
+				margin-right: 16px;
+			}
+			h1 {
+				padding-top: 20px;
+				text-align: center;
+				background-color: #90b8da;
+				margin-top: 0;
+				margin-bottom: 0;
+			}
+			h2 {
+				margin-top: 0;
+				padding-bottom: 20px;
+				text-align: center;
+				background-color: #90b8da;
+				border-bottom: 10px solid #496b87;
+			}
+			button {
+				text-align: center;
+				font-size: 1em !important;
+			}
+			#authorize {
+				text-align: center;
+			}
+			#outstanding ul {
+				list-style-type: none;
+			}
+			#progress {
+				margin-top: 1em;
+			}
+			#outputDiv {
+				margin-top: 1em;
+			}
+			#
+		</style>
+		
+	</head>
+	
+	<body onload="handleClientLoad()">
+	
+		<h1>Statistics Report for Iowa Digital Library</h1>
+		<h2>Administrator Interface</h2>
+		
+		<div id="content">
+		
+			<div id="authorize" style="display:none">
+				<p>Please log into the University of Iowa Digital Libraries account.</p>
+				<button id="authorize-button">Authorize</button><br/>
+			</div>
+			
+			<div id="form" style="display:none">
+
+				<div id="menu">
+
+					<ol id="selectable">
+						<li id="dc">Digital Collections</li>
+						<li id="fa">Finding Aids</li>
+					</ol>
+
+				</div>
+
+				<div id="main">
+
+					<div id="outstanding">
+						<h3>Outstanding reports</h3>
+						<ul>
+							<li><em>There are no outstanding reports.</em></li>
+						</ul>
+					</div>
+
+					<button id="make-api-call-button" style="display:none">Generate Reports</button></span>
+
+					<div id="progress"></div>
+			
+					<div id="outputDiv"></div>
+
+				</div>			
+			</div> <!-- /form -->
+		</div> <!-- /content -->
+	</body>
+</html>
