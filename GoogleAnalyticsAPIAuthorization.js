@@ -1,6 +1,6 @@
 
-var clientId = '629102484251';
-var apiKey = 'AIzaSyBLcH7SEwZuclEhoMuLq4npPeVCx9hLxbk';
+var clientId = ''; //deleted for security
+var apiKey = '';  //deleted for security
 var scopes = 'https://www.googleapis.com/auth/analytics.readonly';
 
 // This function is called after the Client Library has finished loading

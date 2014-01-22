@@ -23,7 +23,7 @@
 
 			$(function() {
 
-				$( "#tabs" ).tabs();
+				$( "#tabs" ).tabs().hide();
 				$( "#radio" ).buttonset();
 				$( "#pageviews" ).click( function() {
 					document.getElementById( "bargraph" ).innerHTML = "";
@@ -43,9 +43,7 @@
 				});
 			});
 
-			function initialize() {
-			//this function populates the "time-period" dropdown menu through an ajax call to getReports.php
-			//if the call is successful, it calls the getReport() function
+			function populateDropdown() {
 				
 				$.ajax({
 					type: "POST",
@@ -56,13 +54,37 @@
 						$.each( data, function( key, val ) {
 
 							if ( val != "." && val != ".." ) {
-								document.getElementById( "time-period" ).innerHTML += 
+								document.getElementById( "reports" ).innerHTML += 
 									"<option value='" + val + "'>" +
 									parseMonthAbbv( val ) + " " + parseYear( val ) +
 									"</option>";
 							}
 						});
-						getReport();
+
+						return true;
+					},
+					error: function( xhr, textStatus, errorThrown ) {
+						console.log( xhr + " " + textStatus + " " + errorThrown );
+						return false;
+					}
+				});
+
+				$.ajax({
+					type: "POST",
+					url: "getReports.php",
+					data: {action: "finding_aids"},
+					dataType: "json",
+					success: function( data ) {
+						$.each( data, function( key, val ) {
+
+							if ( val != "." && val != ".." ) {
+								document.getElementById( "fa-reports" ).innerHTML += 
+									"<option value='" + val + "'>" +
+									parseMonthAbbv( val ) + " " + parseYear( val ) +
+									"</option>";
+							}
+						});
+
 						return true;
 					},
 					error: function( xhr, textStatus, errorThrown ) {
@@ -128,21 +150,21 @@
 				return month;
 			}
 
-			function getReport() {
+			function getReport( reportName, action ) {
 				//this function is called when the option in the dropdown menu changes
 
-				reportName = document.getElementById( "time-period" ).value;
-				action = document.getElementById( "report-type" ).value;
+				if ( reportName != "none" ) {
 
-				var filepath = "";
+					var filepath = "";
 
-				if ( action == "dc" ) {
-					filepath = "reports/digital_collections/" + reportName;
-				} else if ( action == "fa" ) {
-					filepath = "reports/finding_aids/" + reportName;
+					if ( action == "dc" ) {
+						filepath = "reports/digital_collections/" + reportName;
+					} else if ( action == "fa" ) {
+						filepath = "reports/finding_aids/" + reportName;
+					}
+
+					initiateCollectionsArray( filepath, action );
 				}
-
-				initiateCollectionsArray( filepath, action );
 			}
 
 			function initiateCollectionsArray( jsonSource, action ) {
@@ -181,6 +203,9 @@
 							collections[i][ "ppi" ] = 0;
 						}
 					}
+
+					console.log( "Collections array initated." );
+
 					printReport( action );
 				})
 				.fail( function() {
@@ -189,19 +214,22 @@
 			}
 
 			function printReport( action ) {
+
+				$( "#tabs" ).tabs().show(); //show results
+				table = []; //clear results from any previous request
 				
 				if ( action == "dc" ) {
 					calculatePPI(); 
 					$( "#radio" ).show();
-					$( "#table-filter" ).hide();
 				} else if ( action == "fa" ) {
 					$( "#radio" ).hide();
-					$( "#table-filter" ).show();
 				}
-
+				 
 				sortCollectionsArray();
-				setSubtitle();
-				initiateTable( collections );
+				setSubtitle( action );
+				setTableHeaders( action );
+				setTableBody( action );
+				printTable();
 				printGraph();
 			}
 
@@ -222,7 +250,6 @@
 				}
 			}
 
-
 			function sortCollectionsArray() {
 
 				//sort collections array by pageviews
@@ -231,21 +258,21 @@
 				});
 			}
 
-			function initiateTable( array ) {
-				
-				table = []; //clear results from any previous request 
-				setTableHeaders( action );
-				setTableBody( action, array );
-				printTable();
-			}
+			function setSubtitle( action ) {
 
-			function setSubtitle() {
+				var date = "";
+				var subtitle = "";
 
-				var name = $( "#report-type" ).children().filter( ":selected" ).text();
-				var date = $( "#time-period" ).children().filter( ":selected" ).text();
-				var subtitle = "<h2>" + name + ", " + date + "</h2>";
+				if ( action == "dc" ) {
+					date = $( "#reports option:selected" ).text();
+					subtitle = "<h2>Digital Collections: " + date + "</h2>";
+				} else if ( action == "fa" ) {
+					date = $( "#fa-reports option:selected" ).text();
+					subtitle = "<h2>Finding Aids: " + date + "</h2>";
+				}
 
-				$( ".subtitle" ).html( subtitle );
+				table.push( subtitle );
+				$( "#subtitle" ).html( subtitle );
 			}
 
 			function setTableHeaders( action ) {
@@ -253,9 +280,9 @@
 				var tableHeaders = "";
 
 				if ( action == "dc" ) {
-					tableHeaders = ['Digital Collection Title','Pageviews<br/>(unique)','Total Items','Pageviews<br/>per Item','Visitors'];
+					tableHeaders = ['Collection','Pageviews<br/>(unique)','Total Items','Pageviews<br/>per Item','Visitors'];
 				} else if ( action == "fa" ) {
-					tableHeaders = ['Collection Guide Title', 'Pageviews<br/>(unique)', 'Archives'];
+					tableHeaders = ['Finding Aid', 'Pageviews<br/>(unique)', 'Archives'];
 				}
 				table.push( '<table class="tablesorter">' );
 				table.push( '<thead><tr>' );
@@ -265,32 +292,32 @@
 				table.push( '</thead></tr>' );
 			}
 
-			function setTableBody( action, array ) {
+			function setTableBody( action ) {
 
 				table.push( '<tbody>' );
 
-				for ( var i = 0; i < array.length; i++ ) {
+				for ( var i = 0; i < collections.length; i++ ) {
 
 					if ( action == "dc" ) {
 
-						var hyperlink = 'http://digital.lib.uiowa.edu/cdm/search/collection/' + array[i][ "alias" ];
+						var hyperlink = 'http://digital.lib.uiowa.edu/cdm/search/collection/' + collections[i][ "alias" ];
 				
 						table.push( '<tr>' );
-						table.push( '<td><a href="',hyperlink,'">',array[i][ "name" ],'</a></td>'  ); //collection name
-						table.push( '<td class="num">',array[i][ "pageviews" ],'</td>'  ); //pageviews
-						table.push( '<td class="num">',array[i][ "items" ],'</td>'  ); //total items
-						table.push( '<td class="num">',array[i][ "ppi" ],'</td>'  ); //pageviews per item
-						table.push( '<td class="num">',array[i][ "visitors" ],'</td>'  ); //visitors
+						table.push( '<td><a href="',hyperlink,'">',collections[i][ "name" ],'</a></td>'  ); //collection name
+						table.push( '<td class="num">',collections[i][ "pageviews" ],'</td>'  ); //pageviews
+						table.push( '<td class="num">',collections[i][ "items" ],'</td>'  ); //total items
+						table.push( '<td class="num">',collections[i][ "ppi" ],'</td>'  ); //pageviews per item
+						table.push( '<td class="num">',collections[i][ "visitors" ],'</td>'  ); //visitors
 						table.push( '</tr>' );
 
 					} else if ( action == "fa" ) {
 
-						if ( array[i][ "name" ] && array[i][ "name" ].length > 0 ) {
+						if ( collections[i][ "name" ] && collections[i][ "name" ].length > 0 ) {
 
 							table.push( '<tr>' );
-							table.push( '<td class="collectionTitle">',array[i][ "name" ],'</td>'  ); 
-							table.push( '<td class="num">',array[i][ "pageviews" ],'</td>'  );
-							table.push( '<td class="num">',array[i][ "archives" ],'</td>'  );
+							table.push( '<td>',collections[i][ "name" ],'</td>'  ); 
+							table.push( '<td class="num">',collections[i][ "pageviews" ],'</td>'  );
+							table.push( '<td class="num">',collections[i][ "archives" ],'</td>'  );
 							table.push( '</tr>' );
 
 						}					
@@ -308,24 +335,6 @@
 					sortList: [ [1,1] ], 
 					widgets: ['zebra']
 				});
-			}
-
-			function filterTable() {
-				var archives = document.getElementById( "fa-filter" ).value;
-
-				if ( archives == "all" ) {
-					initiateTable( collections );
-				} else {
-					var filterArray = [];
-
-					for ( var i=0; i < collections.length; i++ ) {
-						if ( collections[i][ "archives" ] == archives ) {
-							filterArray.push( collections[i] );
-						}
-					}
-
-					initiateTable( filterArray );
-				}
 			}
 
 			/* Bar graph */
@@ -448,21 +457,14 @@
 				margin: 20px;
 			}
 			#form {
-				padding-bottom: 40px;
+				margin-bottom: 20px;
+				text-align: center;
 			}
-			#form .param {
-				display: inline;
-				float: left;
-				margin-right: 30px;
+			#form span {
+				margin-right: 5px;
 			}
-			.instructions {
-				font-weight: bold;
-				margin-right: 10px;
-				display: inline;
-				float: left;
-			}
-			#tabs {
-				clear: both;
+			#form select {
+				margin-right: 20px;
 			}
 			h1 {
 				padding: 20px;
@@ -474,8 +476,11 @@
 			h2 {
 				font-size: 1em;
 			}
-			#generate {
-				font-weight: bold;
+			button {
+				font-size: 1em !important;
+			}
+			#authorize {
+				text-align: center;
 			}
 
 			
@@ -491,24 +496,10 @@
 			table a:hover {
 				text-decoration: underline;
 			}
-			#table-filter {
-				display: inline;
-				float: right;
-				padding-top: 0.5em;
-				margin-top: -2.5em;
-			}
-			#outputDiv {
-				clear: both;
-				display: block;
-			}
 			
 			
 			/* Bar graph */
 			
-			#radio {
-				clear: both;
-				display: inline;
-			}
 			.axis path, .axis line {
 				fill: none;
 				stroke: #000;
@@ -530,61 +521,58 @@
 				border-radius: 8px;           
 				pointer-events: none;         
 			}
-			td.collectionTitle {
-				width: 60%;
-			}
 			
+			/* Printer-friendly style */
+			
+			@media print {
+				h1 {
+					font-size: 16pt;
+				}
+				h2 {
+					display: block;
+					font-size: 14pt;
+				}
+				table {
+					font-size: 10pt;
+				}
+				#authorize-button, #form {
+					display: none;
+				}
+			}
 		</style>
 		
 	</head>
 	
-	<body onload="initialize()">
+	<body onload="populateDropdown()">
 	
 		<h1>Statistics Report for Iowa Digital Library</h1>
 		
 		<div id="content">
-
+			
 			<div id="form">
-				<div class="param">
-					<div class="instructions">1. Select a report type:</div>
-					<select name="report-type" id="report-type">
-						<option value="dc" selected="selected">Digital Collections</option>
-						<option value="fa">Collection Guides</option>
-					</select>
-				</div>	
-				<div class="param">
-					<div class="instructions">2. Select a time period:</div>
-					<select name="time-period" id="time-period"></select>
-				</div>
-				<div class="param">
-					<span class="instructions">3. </span>
-					<button id="generate" onclick="getReport()">Get report</button>
-				</div>
+				<span>Digital collections: </span>
+				<select name="reports" id="reports" onchange="getReport( this.value, 'dc' )">
+					<option value="none" selected="selected">Select a report</option>
+				</select>
+				<span>Finding Aids: </span>
+				<select name="fa-reports" id="fa-reports" onchange="getReport( this.value, 'fa' )">
+					<option value="none" selected="selected">Select a report</option>
+				</select>
 			</div>
-
+			
+			<div id="progress"></div>
+			
 			<div id="tabs">
 				<ul>
-					<li><a href="#table">Table</a></li>
+					<li><a href="#outputDiv">Table</a></li>
 					<li><a href="#graph">Graph</a></li>
 					<li><a href="#exp">Explanation of Statistics</a></li>
 				</ul>
 			
-				<div id="table">
-					<div class="subtitle"></div>	
-					<div id="table-filter">
-						<div class="instructions">Filter:</div>
-						<select name="fa-filter" id="fa-filter" onchange="filterTable()">
-							<option value="all" id="fa-all" selected="selected">All Archives</option>
-							<option value="Special Collections">Special Collections</option>
-							<option value="University Archives">University Archives</option>
-							<option value="Iowa Women's Archives">Iowa Women's Archives</option>
-						</select>
-					</div>
-					<div id="outputDiv"></div>
-				</div>
+				<div id="outputDiv"></div>
 				
 				<div id="graph">
-					<div class="subtitle"></div>
+					<div id="subtitle"></div>
 					<form id="radio">
 						<input type="radio" id="pageviews" name="radio" checked="checked" /><label for="pageviews">Pageviews (unique)</label>
 						<input type="radio" id="items" name="radio" /><label for="items">Total Items</label>
