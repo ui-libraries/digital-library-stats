@@ -31,8 +31,8 @@ header( 'Content-type: application/json');
 	if ( is_dir( $dirName ) ) {
 	
 		// generate all possible report names formatted as YYYYMM
-		// assumes earliest possible report is Jan 2012
-		for ( $y = 2012; $y < (int)$currentYear; $y++ ) {
+		// assumes earliest possible report is Jan 2013
+		for ( $y = 2013; $y < (int)$currentYear; $y++ ) {
 		
 			for ( $m = 1; $m < 13; $m++ ) {
 			
@@ -96,6 +96,5 @@ header( 'Content-type: application/json');
 	} else {
 		echo "{}";
 	}
-	
 	
 ?>

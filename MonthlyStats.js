@@ -96,6 +96,7 @@ function parseMonthAbbv( dateVal ) {
 			month = "Dec";
 			break;
 	}
+
 	return month;
 }
 
@@ -311,10 +312,7 @@ function handleProfiles( results ) {
 						clearInterval( interval );
 					}
 				}, 1000 );
-
 			}
-
-			
 
 		} else {
 			console.log( 'No profiles found for this user.' );
@@ -343,7 +341,6 @@ function queryCoreReportingApi( profileId, colId ) {
 
 function queryCoreReportingApiFa( profileId ) {
 	console.log( 'Querying Core Reporting API for finding aids.' );
-
 	// Use the Analytics Service Object to query the Core Reporting API
 
 	gapi.client.analytics.data.ga.get({
@@ -396,7 +393,6 @@ function saveResults( results ) {
 
 	} else {
 		console.log( 'No results found' );
-		outputToPage( 'No results found' );
 	}
 
 	if ( queryIndex == ( collections.length - 1 ) ) {  //if this is the last item in this query
@@ -477,9 +473,6 @@ function saveResultsFa( results ) {
 			}
 		}
 
-		//copy collections to finalCollections 
-		//finalCollections is the array that is written to the JSON file
-
 		if ( faQuery == 1 ) {
 			faQuery = 2;
 			queryAccounts();
@@ -488,9 +481,7 @@ function saveResultsFa( results ) {
 			//finalCollections is the array that is written to the JSON file
 			finalCollections = collections;
 			writeToJSONFile( "finding_aids" );
-			//reEvaluateUserInput();
 		}
-		
 
 	} else {
 		console.log( "No results found" );
