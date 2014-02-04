@@ -446,7 +446,7 @@ function saveResultsFa( results ) {
 				archives : arch
 			}
 
-			if ( !title.match( "Page Not Found" ) && !title.match( "Record Groups - Special Collections & University Archives" ) ) {
+			if ( !title.match( "Not Found" ) && !title.match( "Record Groups - Special Collections & University Archives" ) ) {
 				
 				if( collections.length != 0 ) {
 
