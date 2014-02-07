@@ -163,7 +163,7 @@ function initiateCollectionsArray( jsonSource ) {
 			collections[i][ "visitors" ] = 0;
 		}
 		console.log( "Collections array initated." );
-
+        console.log(collections);
 		initiateQuery();
 	})
 	.fail( function() {
@@ -172,7 +172,7 @@ function initiateCollectionsArray( jsonSource ) {
 }
 
 function initiateQuery() {
-	// set variables necessary for one particular query
+	// set variables necessary for one particular query (Drew: one particular query = one month's results)
 	// and trigger the query
 
 	console.log( "initiate query" );
@@ -311,7 +311,7 @@ function handleProfiles( results ) {
 					if( i >= collections.length ) {
 						clearInterval( interval );
 					}
-				}, 1000 );
+				}, 3000 );
 			}
 
 		} else {
@@ -326,7 +326,6 @@ function handleProfiles( results ) {
 
 function queryCoreReportingApi( profileId, colId ) {
 	console.log( 'Querying Core Reporting API.' );
-
 	// Use the Analytics Service Object to query the Core Reporting API
 	// Unique pageviews and visitors
 	gapi.client.analytics.data.ga.get({
@@ -367,14 +366,19 @@ function queryCoreReportingApiFa2() {
 }
 
 function handleCoreReportingResults( results ) {
+	console.log('handleCore called')
 	if ( results.error ) {
+		console.log('ERRORS BE HERE')
 		console.log( 'There was an error querying core reporting API: ' + results.message );
 	} else {
 		if ( queryType == "dc") {
 			saveResults( results );
 		} else if ( queryType == "fa" ) {
 			saveResultsFa( results );
-		}		
+		}	
+        else {
+			console.log("Query type not dc or fa");
+		}
 	}
 }
 
@@ -384,6 +388,8 @@ function handleCoreReportingResults( results ) {
 function saveResults( results ) {
 
 	console.log( "saving results" );
+	
+	console.log(results)
 
 	if ( results.rows && results.rows.length ) {
 
@@ -411,7 +417,7 @@ function saveResults( results ) {
 }
 
 function saveResultsFa( results ) {
-
+	
 	if ( results.rows && results.rows.length ) {
 		console.log( "results.rows.length = " + results.rows.length );
 		var myString="";
@@ -563,9 +569,10 @@ function reEvaluateUserInput() {
 	// if there is more than one date left in the dates array,
 	// remove the date that was just queried ( dates at index 0 ) 
 	// and trigger a new query with the next date
-
+	console.log("reevalute user input");
 	if ( dates.length > 1 ) {
-
+		console.log(dates);
+		console.log("dates greater than 1");
 		var tempArray = [];
 
 		for (var i = 1; i < dates.length; i++) {
