@@ -289,7 +289,7 @@ function handleProfiles( results ) {
 
 			// Step 3. Query the Core Reporting API
 			// Google Analytics API only allows 1 query per second.  The setInterval function sets the rate 
-			// at which the queries are sent.
+			// at which the queries are sent.  Some queries take more than one second, so setInterval is currently set to 3000 ms to be on the safe side.
 
 			if ( queryType == "fa" ) {
 
