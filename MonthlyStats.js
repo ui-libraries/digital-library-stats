@@ -11,7 +11,7 @@ var faQuery = "1";  //this hold the current finding aid query (2 queries must be
 
 function getOutstandingReports() {
 //generate a list of outstanding reports
-//display results as checklist
+//display results as checklist on front-end
 
 	$.ajax({
 		type: "POST",
