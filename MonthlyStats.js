@@ -483,8 +483,8 @@ function saveResultsFa( results ) {
 			faQuery = 2;
 			queryAccounts();
 		} else if ( faQuery == 2 ) {
-			//copy collections to finalCollections 
-			//finalCollections is the array that is written to the JSON file
+			//copy collections to finalCollections!
+			//finalCollections is the array that is written to the JSON file!!
 			finalCollections = collections;
 			writeToJSONFile( "finding_aids" );
 		}
