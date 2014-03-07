@@ -11,7 +11,7 @@ var faQuery = "1";  //this hold the current finding aid query (2 queries must be
 
 function getOutstandingReports() {
 //generate a list of outstanding reports
-//display results as checklist on front-end
+//display results as checklist
 
 	$.ajax({
 		type: "POST",
@@ -163,7 +163,7 @@ function initiateCollectionsArray( jsonSource ) {
 			collections[i][ "visitors" ] = 0;
 		}
 		console.log( "Collections array initated." );
-        console.log(collections);
+
 		initiateQuery();
 	})
 	.fail( function() {
@@ -172,7 +172,7 @@ function initiateCollectionsArray( jsonSource ) {
 }
 
 function initiateQuery() {
-	// set variables necessary for one particular query (Drew: one particular query = one month's results)
+	// set variables necessary for one particular query
 	// and trigger the query
 
 	console.log( "initiate query" );
@@ -289,7 +289,7 @@ function handleProfiles( results ) {
 
 			// Step 3. Query the Core Reporting API
 			// Google Analytics API only allows 1 query per second.  The setInterval function sets the rate 
-			// at which the queries are sent.  Some queries take more than one second, so setInterval is currently set to 3000 ms to be on the safe side.
+			// at which the queries are sent.
 
 			if ( queryType == "fa" ) {
 
@@ -326,6 +326,7 @@ function handleProfiles( results ) {
 
 function queryCoreReportingApi( profileId, colId ) {
 	console.log( 'Querying Core Reporting API.' );
+
 	// Use the Analytics Service Object to query the Core Reporting API
 	// Unique pageviews and visitors
 	gapi.client.analytics.data.ga.get({
@@ -366,19 +367,14 @@ function queryCoreReportingApiFa2() {
 }
 
 function handleCoreReportingResults( results ) {
-	console.log('handleCore called')
 	if ( results.error ) {
-		console.log('ERRORS BE HERE')
 		console.log( 'There was an error querying core reporting API: ' + results.message );
 	} else {
 		if ( queryType == "dc") {
 			saveResults( results );
 		} else if ( queryType == "fa" ) {
 			saveResultsFa( results );
-		}	
-        else {
-			console.log("Query type not dc or fa");
-		}
+		}		
 	}
 }
 
@@ -389,6 +385,7 @@ function saveResults( results ) {
 
 	console.log( "saving results" );
 	
+	console.log('AND THE RESULTS ARE')
 	console.log(results)
 
 	if ( results.rows && results.rows.length ) {
@@ -483,8 +480,8 @@ function saveResultsFa( results ) {
 			faQuery = 2;
 			queryAccounts();
 		} else if ( faQuery == 2 ) {
-			//copy collections to finalCollections!
-			//finalCollections is the array that is written to the JSON file!!
+			//copy collections to finalCollections 
+			//finalCollections is the array that is written to the JSON file
 			finalCollections = collections;
 			writeToJSONFile( "finding_aids" );
 		}
@@ -569,10 +566,9 @@ function reEvaluateUserInput() {
 	// if there is more than one date left in the dates array,
 	// remove the date that was just queried ( dates at index 0 ) 
 	// and trigger a new query with the next date
-	console.log("reevalute user input");
+
 	if ( dates.length > 1 ) {
-		console.log(dates);
-		console.log("dates greater than 1");
+
 		var tempArray = [];
 
 		for (var i = 1; i < dates.length; i++) {
