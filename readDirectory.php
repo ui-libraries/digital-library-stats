@@ -19,6 +19,8 @@ header( 'Content-type: application/json');
 		$dirName = "reports/digital_collections";
 	} else if ( $action == "fa" ) {
 		$dirName = "reports/finding_aids";
+	} else if ( $action == "diy" ) {
+		$dirName = "reports/diy_history";
 	}
 	
 	$currentYear = date(Y);
