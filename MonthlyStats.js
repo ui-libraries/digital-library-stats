@@ -127,6 +127,18 @@ function initiateContext() {
 		collections = [];
 		initiateQuery();  
 	}
+	else if ( queryType == "diy" ) {
+
+		console.log( "initiate context for DIY History" );
+		//pioneer lives, szathmary culinary manuscripts and cookbooks, iowa women's lives: letters and diaries, building the transcontinental railroad, civil war diaries, nile kinnick collection
+		//"name":"African American Women in Iowa Digital Collection","alias":"aawiowa","items":1498
+		collections = [{"name": "Pioneer Lives"}, {"name": "Szathmary Culinary Manuscripts and Cookbooks"}, {"name": "Iowa Women's Lives"}, {"name": "Building the Transcontinental Railroad"}, {"name": "Civil War Diaries"}, {"name": "Nile Kinnick Collection"}];
+		for ( var i = 0; i < collections.length; i++ ) {
+			collections[i][ "pageviews" ] = 0;
+			collections[i][ "visitors" ] = 0;
+		}
+		initiateQuery();
+	}
 }
 
 function initiateCollectionsArray( jsonSource ) {
@@ -196,8 +208,8 @@ function getDates() {
 
 function setDates() {
 	//create startdate and enddate from dates and index 0
-	//format dates for Google Analytics API query
 
+	//format dates for Google Analytics API query
 	var yr = parseYear( dates[0].value );
 	var mo = parseMonthNum( dates[0].value );
 	startdate = yr + "-" + mo + "-01";
@@ -289,7 +301,7 @@ function handleProfiles( results ) {
 
 			// Step 3. Query the Core Reporting API
 			// Google Analytics API only allows 1 query per second.  The setInterval function sets the rate 
-			// at which the queries are sent.
+			// at which the queries are sent!
 
 			if ( queryType == "fa" ) {
 
@@ -299,7 +311,30 @@ function handleProfiles( results ) {
 					queryCoreReportingApiFa2( firstProfileId );
 				}
 
-			} else {
+			} else if ( queryType == "diy" ) {
+				console.log ("diy handle profiles!")
+				
+				gapi.client.analytics.data.ga.get({
+				'ids': 'ga:64453574',
+				'start-date': startdate,
+				'end-date': enddate,
+				'dimensions': 'ga:pageTitle, ga:pagePath',
+				'filters': 'ga:pagePath=~transcribe/items/show/\\d\\d?\\d?\\d?$',
+				'metrics': 'ga:uniquePageviews',			
+				//'filters': 'ga:pagePath=~transcribe/items/show/'
+				//'metrics': 'ga:uniquePageviews,ga:visitors',
+				}).execute(function(r){console.log(r););
+
+			
+
+				
+				
+				//transcribe/items/show/\d{1,4}$
+
+				
+				
+			}			
+			else {
 				i = 0;
 				var interval = setInterval( function() {
 					queryIndex = i; 
@@ -323,6 +358,19 @@ function handleProfiles( results ) {
 }
 
 /* Query the Core Reporting API */
+
+function queryCoreReportingAPIdiy( results ) {
+	gapi.client.analytics.data.ga.get({
+	'ids': 'ga:64453574',
+	'start-date': startdate,
+	'end-date': enddate,
+	'dimensions': 'ga:pageTitle, ga:pagePath',
+	'filters': 'ga:pagePath=~transcribe/items/show/\\d\\d?\\d?\\d?$',
+	'metrics': 'ga:uniquePageviews',			
+	//'filters': 'ga:pagePath=~transcribe/items/show/'
+	//'metrics': 'ga:uniquePageviews,ga:visitors',
+	}).execute(handleCoreReportingResults);
+}
 
 function queryCoreReportingApi( profileId, colId ) {
 	console.log( 'Querying Core Reporting API.' );
@@ -374,7 +422,10 @@ function handleCoreReportingResults( results ) {
 			saveResults( results );
 		} else if ( queryType == "fa" ) {
 			saveResultsFa( results );
-		}		
+		}	
+		else ( queryType == "diy") {
+			saveResultsDIY ( results ) ;
+		}
 	}
 }
 
@@ -489,6 +540,11 @@ function saveResultsFa( results ) {
 	} else {
 		console.log( "No results found" );
 	}
+}
+
+function saveResultsDIY (results) {
+	console.log(saveResultsDIY);
+	console.log(results);
 }
 
 function updateFinalCollections() {
