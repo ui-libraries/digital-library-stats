@@ -7,7 +7,17 @@ var queryIndex; //the index of the current collection being queried
 var recheck = 0;  //this integer keeps track of the number of times a query needs to be checked for API failure
 var queryType = "dc";  //this holds the type of query the user wants to make (indicated by the menu selection)
 var faQuery = "1";  //this hold the current finding aid query (2 queries must be made)
+var currentCollectionID = '';
 
+if(typeof(String.prototype.trim) === "undefined")
+{
+    String.prototype.trim = function() 
+    {
+        return String(this).replace(/^\s+|\s+$/g, '');
+    };
+}
+
+//TODO: remove extraneous console.logs 
 
 function getOutstandingReports() {
 //generate a list of outstanding reports
@@ -132,7 +142,10 @@ function initiateContext() {
 		console.log( "initiate context for DIY History" );
 		//pioneer lives, szathmary culinary manuscripts and cookbooks, iowa women's lives: letters and diaries, building the transcontinental railroad, civil war diaries, nile kinnick collection
 		//"name":"African American Women in Iowa Digital Collection","alias":"aawiowa","items":1498
-		collections = [{"name": "Pioneer Lives"}, {"name": "Szathmary Culinary Manuscripts and Cookbooks"}, {"name": "Iowa Women's Lives"}, {"name": "Building the Transcontinental Railroad"}, {"name": "Civil War Diaries"}, {"name": "Nile Kinnick Collection"}];
+		collections = {"Pioneer Lives": {"pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"pageviews": 0, "visitors": 0}};
+		console.log("TESTING COLLECTIONS");
+		console.log(collections["Pioneer Lives"]);
+		console.log(collections["Pioneer Lives"]["pageviews"]);
 		for ( var i = 0; i < collections.length; i++ ) {
 			collections[i][ "pageviews" ] = 0;
 			collections[i][ "visitors" ] = 0;
@@ -147,6 +160,8 @@ function initiateCollectionsArray( jsonSource ) {
 	//when successfully executed, call initiateQuery function
 
 	//clear any data from previous queries
+	
+	
 	collections = [];
 
 	$.getJSON( jsonSource, function( data ) {  
@@ -323,7 +338,7 @@ function handleProfiles( results ) {
 				'metrics': 'ga:uniquePageviews',			
 				//'filters': 'ga:pagePath=~transcribe/items/show/'
 				//'metrics': 'ga:uniquePageviews,ga:visitors',
-				}).execute(function(r){console.log(r););
+				}).execute(function(r){queryCoreReportingAPIdiy();});
 
 			
 
@@ -384,7 +399,7 @@ function queryCoreReportingApi( profileId, colId ) {
 		'metrics': 'ga:uniquePageviews,ga:visitors',
 		'filters': 'ga:pagePath=@/' + colId + '/;ga:pagePath!@search'
 	}).execute( handleCoreReportingResults );
-
+item
 }
 
 function queryCoreReportingApiFa( profileId ) {
@@ -422,8 +437,7 @@ function handleCoreReportingResults( results ) {
 			saveResults( results );
 		} else if ( queryType == "fa" ) {
 			saveResultsFa( results );
-		}	
-		else ( queryType == "diy") {
+		} else if ( queryType == "diy") {
 			saveResultsDIY ( results ) ;
 		}
 	}
@@ -505,8 +519,8 @@ function saveResultsFa( results ) {
 				if( collections.length != 0 ) {
 
 					//check to see if this finding aid is already listed in collections array
-					var match = false;
 					for ( var j = 0; j < collections.length; j++ ) {
+					var match = false;
 						if ( collections[j]["name"] && collections[j]["name"] == title ) {
 
 							//this finding aid is already listed in the array
@@ -545,6 +559,99 @@ function saveResultsFa( results ) {
 function saveResultsDIY (results) {
 	console.log(saveResultsDIY);
 	console.log(results);
+	console.log(collections);
+	
+	DIYInfoObj = {}
+	
+	rowLength = results.rows.length
+
+	
+	for (var j = 0; j < results.rows.length; j++) {
+	
+		itemTitle = results.rows[j][0];
+		itemTitleArray = itemTitle.split( '|' );
+		//console.log("LENGTH IS ");
+		//console.log(itemTitleArray.length);
+		if (itemTitleArray.length == 4){ //ignoring old titles
+			itemTitleArray.pop();
+			collectionName = itemTitleArray.pop();
+			collectionName = collectionName.trim(); 
+			
+			itemURL = results.rows[j][1]
+			itemURLArray = itemURL.split ( '/' );
+
+			itemURLid = itemURLArray.pop();
+			itemURLid = itemURLid.trim();
+						
+			if ((DIYInfoObj[itemURLid]) == undefined) {
+				DIYInfoObj[itemURLid] = collectionName;
+			}
+		}	
+	}
+	
+	
+	console.log("BEGINNINGS OF NEW OBJECT IS");
+	console.log(DIYInfoObj);
+	console.log("LENGTH OF NEW OBJECT IS");
+	console.log(Object.keys(DIYInfoObj).length); 
+	
+	noOfQueriesToDo = Object.keys(DIYInfoObj).length; 
+	keysArray = Object.keys(DIYInfoObj);
+	i = 0;
+	/*TODO: REALLY CLEAN THIS UP (like DIYInfoObj[keysArray[i]])*/
+	var interval = setInterval(function(){
+		i++;
+		queryIndex = i;
+		currentCollection = DIYInfoObj[keysArray[i]];
+		gapi.client.analytics.data.ga.get({
+		'ids': 'ga:64453574',
+		'start-date': startdate,
+		'end-date': enddate,
+		'filters': 'ga:pagePath=~transcribe/scripto/transcribe/' + keysArray[i],
+		'dimensions': 'ga:pageTitle, ga:pagePath',
+		'metrics': 'ga:uniquePageviews',			
+		}).execute(DIYResponse);
+		if( i >= noOfQueriesToDo ) {
+			clearInterval( interval );
+			console.log("PRINT OUT COLLECTIONS");
+			console.log(collections);
+		}
+		
+	}, 1000);
+			
+}
+
+function DIYResponse(results){
+	console.log(results);
+	console.log("RESULTS ROWS");
+	console.log(results.rows);
+	console.log("RESULTS ROWS 0");
+	console.log(results.rows[1]);
+	
+	if (results.rows){
+		rowTracker = 0;
+		while (rowTracker < results.rows.length){
+			result=results.rows[rowTracker];
+			console.log("A RESULT");
+			console.log(result);
+			/*TODO: maybe don't use itemURLid */
+			//console.log("A RESULT 0");
+			//console.log(result[0]);
+			//console.log("A RESULT 2");
+			//console.log(result[2]);
+			//console.log("INNER RESULT");
+			//console.log(result);
+			if (result[2]){
+				newPageviews = parseInt(result[2]);
+				console.log("CURRENT COLLECTION")
+				console.log(currentCollection);
+				console.log("NEW PAGEVIEWS");
+				collections[currentCollection]["pageviews"] += newPageviews;	
+			}
+			
+			rowTracker++;
+		}
+	}
 }
 
 function updateFinalCollections() {
