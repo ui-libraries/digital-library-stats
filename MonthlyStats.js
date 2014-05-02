@@ -8,6 +8,8 @@ var recheck = 0;  //this integer keeps track of the number of times a query need
 var queryType = "dc";  //this holds the type of query the user wants to make (indicated by the menu selection)
 var faQuery = "1";  //this hold the current finding aid query (2 queries must be made)
 var currentCollectionID = '';
+var auditTrail = {"Pioneer Lives": [], "Civil War Diaries and Letters": [], "Szathmary Culinary Manuscripts and Cookbooks": [], "Iowa Women’s Lives: Letters and Diaries": [], "Building the Transcontinental Railroad": [], "Nile Kinnick Collection": []}; //Just for testing
+var zeroCounter = 0;
 
 if(typeof(String.prototype.trim) === "undefined")
 {
@@ -142,7 +144,10 @@ function initiateContext() {
 		console.log( "initiate context for DIY History" );
 		//pioneer lives, szathmary culinary manuscripts and cookbooks, iowa women's lives: letters and diaries, building the transcontinental railroad, civil war diaries, nile kinnick collection
 		//"name":"African American Women in Iowa Digital Collection","alias":"aawiowa","items":1498
-		collections = {"Pioneer Lives": {"pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"pageviews": 0, "visitors": 0}};
+		
+		//Trying to mimic format here.  
+		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0}};
+		
 		console.log("TESTING COLLECTIONS");
 		console.log(collections["Pioneer Lives"]);
 		console.log(collections["Pioneer Lives"]["pageviews"]);
@@ -339,16 +344,8 @@ function handleProfiles( results ) {
 				//'filters': 'ga:pagePath=~transcribe/items/show/'
 				//'metrics': 'ga:uniquePageviews,ga:visitors',
 				}).execute(function(r){queryCoreReportingAPIdiy();});
-
-			
-
-				
-				
-				//transcribe/items/show/\d{1,4}$
-
-				
-				
-			}			
+			}	
+			//Digital collections case
 			else {
 				i = 0;
 				var interval = setInterval( function() {
@@ -399,7 +396,7 @@ function queryCoreReportingApi( profileId, colId ) {
 		'metrics': 'ga:uniquePageviews,ga:visitors',
 		'filters': 'ga:pagePath=@/' + colId + '/;ga:pagePath!@search'
 	}).execute( handleCoreReportingResults );
-item
+
 }
 
 function queryCoreReportingApiFa( profileId ) {
@@ -603,6 +600,15 @@ function saveResultsDIY (results) {
 		i++;
 		queryIndex = i;
 		currentCollection = DIYInfoObj[keysArray[i]];
+		if( i >= noOfQueriesToDo ) {
+			clearInterval( interval );
+			console.log("PRINT OUT COLLECTIONS");
+			console.log(collections);
+			console.log("AUDIT TRAIL IS");
+			console.log(auditTrail);
+			console.log("ZERO COUNTER IS");
+			console.log(zeroCounter);
+		}
 		gapi.client.analytics.data.ga.get({
 		'ids': 'ga:64453574',
 		'start-date': startdate,
@@ -611,48 +617,64 @@ function saveResultsDIY (results) {
 		'dimensions': 'ga:pageTitle, ga:pagePath',
 		'metrics': 'ga:uniquePageviews',			
 		}).execute(DIYResponse);
-		if( i >= noOfQueriesToDo ) {
-			clearInterval( interval );
-			console.log("PRINT OUT COLLECTIONS");
-			console.log(collections);
-		}
+	}, 5000);
 		
-	}, 1000);
 			
-}
 
+d}
+//
 function DIYResponse(results){
 	console.log(results);
 	console.log("RESULTS ROWS");
+	
+	console.log("CURRENT COLLECTION");
+	console.log(currentCollection);
+	
+	//Where the rows are stored
 	console.log(results.rows);
-	console.log("RESULTS ROWS 0");
-	console.log(results.rows[1]);
 	
 	if (results.rows){
+	
+		//iterating through the rows using a while loop
 		rowTracker = 0;
 		while (rowTracker < results.rows.length){
-			result=results.rows[rowTracker];
-			console.log("A RESULT");
-			console.log(result);
-			/*TODO: maybe don't use itemURLid */
-			//console.log("A RESULT 0");
-			//console.log(result[0]);
-			//console.log("A RESULT 2");
-			//console.log(result[2]);
-			//console.log("INNER RESULT");
-			//console.log(result);
-			if (result[2]){
-				newPageviews = parseInt(result[2]);
-				console.log("CURRENT COLLECTION")
-				console.log(currentCollection);
-				console.log("NEW PAGEVIEWS");
-				collections[currentCollection]["pageviews"] += newPageviews;	
+		
+			currResult=results.rows[rowTracker];
+			console.log('RESULT ROW ' + rowTracker);
+			//console.log(currResult);
+
+			if (currResult[2]){
+			
+				newPageviews = parseInt(currResult[2]);
+
+				//console.log("NEW PAGEVIEWS");
+				collections[currentCollection]["pageviews"] += newPageviews;
+				
+				itemURLArray = currResult[1].split ( '/' );
+				itemURLIdSub = itemURLArray.pop();
+				itemURLId = itemURLArray.pop();
+				
+				auditObj = {itemID: itemURLId, itemSubID: itemURLIdSub, pageviews: newPageviews, currentCollection: currentCollection};
+				
+				auditTrail[currentCollection].push(auditObj);
+				
+			
+				//This code is to try to test how the totals are being determined
+
 			}
 			
 			rowTracker++;
-		}
+		}	
+		
+	} 
+	if (results.totalResults == 0){
+		zeroCounter++;
 	}
+
+	
 }
+
+
 
 function updateFinalCollections() {
 	if ( recheck == 0 ) {
