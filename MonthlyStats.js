@@ -8,8 +8,15 @@ var recheck = 0;  //this integer keeps track of the number of times a query need
 var queryType = "dc";  //this holds the type of query the user wants to make (indicated by the menu selection)
 var faQuery = "1";  //this hold the current finding aid query (2 queries must be made)
 var currentCollectionID = '';
-var auditTrail = {"Pioneer Lives": [], "Civil War Diaries and Letters": [], "Szathmary Culinary Manuscripts and Cookbooks": [], "Iowa Women’s Lives: Letters and Diaries": [], "Building the Transcontinental Railroad": [], "Nile Kinnick Collection": []}; //Just for testing
+var auditTrail = {"Pioneer Lives": [], "Civil War Diaries and Letters": [], "Szathmary Culinary Manuscripts and Cookbooks": [], "Iowa Women’s Lives: Letters and Diaries": [], "Building the Transcontinental Railroad": [], "Nile Kinnick Collection": [], "World War II Diaries and Letters": []}; //Just for testing
 var zeroCounter = 0;
+var DIYQueryCounter = 0;
+var NoOfDIYQueriesToDo = 0;
+var DIYKeysArray = [];
+var sumArray = [];//Just for debugging
+var IDArray = []; //Just for debugging
+var itemObj = {}; //Append pageviews per item to object while iterating
+var totalPageviews = 0;
 
 if(typeof(String.prototype.trim) === "undefined")
 {
@@ -17,6 +24,26 @@ if(typeof(String.prototype.trim) === "undefined")
     {
         return String(this).replace(/^\s+|\s+$/g, '');
     };
+}
+
+//Added for testing
+Array.prototype.diff = function(a) {
+    return this.filter(function(i) {return a.indexOf(i) < 0;});
+};
+
+function eliminateDuplicates(arr) {
+  var i,
+      len=arr.length,
+      out=[],
+      obj={};
+
+  for (i=0;i<len;i++) {
+    obj[arr[i]]=0;
+  }
+  for (i in obj) {
+    out.push(i);
+  }
+  return out;
 }
 
 //TODO: remove extraneous console.logs 
@@ -146,7 +173,7 @@ function initiateContext() {
 		//"name":"African American Women in Iowa Digital Collection","alias":"aawiowa","items":1498
 		
 		//Trying to mimic format here.  
-		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0}};
+		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0}, "World War II Diaries and Letters": {"name": "World War II Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0}};
 		
 		console.log("TESTING COLLECTIONS");
 		console.log(collections["Pioneer Lives"]);
@@ -343,11 +370,14 @@ function handleProfiles( results ) {
 				'metrics': 'ga:uniquePageviews',			
 				//'filters': 'ga:pagePath=~transcribe/items/show/'
 				//'metrics': 'ga:uniquePageviews,ga:visitors',
-				}).execute(function(r){queryCoreReportingAPIdiy();});
+				}).execute(function(r){
+					queryCoreReportingAPIdiy();
+				});
 			}	
-			//Digital collections case
 			else {
+				//Digital collections case
 				i = 0;
+				
 				var interval = setInterval( function() {
 					queryIndex = i; 
 					console.log( i + ". " + collections[i][ "name" ] )
@@ -554,7 +584,7 @@ function saveResultsFa( results ) {
 }
 
 function saveResultsDIY (results) {
-	console.log(saveResultsDIY);
+
 	console.log(results);
 	console.log(collections);
 	
@@ -592,37 +622,127 @@ function saveResultsDIY (results) {
 	console.log("LENGTH OF NEW OBJECT IS");
 	console.log(Object.keys(DIYInfoObj).length); 
 	
-	noOfQueriesToDo = Object.keys(DIYInfoObj).length; 
-	keysArray = Object.keys(DIYInfoObj);
+	NoOfDIYQueriesToDo = Object.keys(DIYInfoObj).length; 
 	i = 0;
-	/*TODO: REALLY CLEAN THIS UP (like DIYInfoObj[keysArray[i]])*/
-	var interval = setInterval(function(){
-		i++;
-		queryIndex = i;
-		currentCollection = DIYInfoObj[keysArray[i]];
-		if( i >= noOfQueriesToDo ) {
-			clearInterval( interval );
-			console.log("PRINT OUT COLLECTIONS");
-			console.log(collections);
-			console.log("AUDIT TRAIL IS");
-			console.log(auditTrail);
-			console.log("ZERO COUNTER IS");
-			console.log(zeroCounter);
-		}
-		gapi.client.analytics.data.ga.get({
-		'ids': 'ga:64453574',
-		'start-date': startdate,
-		'end-date': enddate,
-		'filters': 'ga:pagePath=~transcribe/scripto/transcribe/' + keysArray[i],
-		'dimensions': 'ga:pageTitle, ga:pagePath',
-		'metrics': 'ga:uniquePageviews',			
-		}).execute(DIYResponse);
-	}, 5000);
+	DIYKeysArray = Object.keys(DIYInfoObj);
+	
+	DIYQueryResolver();
 		
 			
 
-d}
-//
+}
+
+function DIYQueryResolver(){
+
+	queryIndex = i; //TODO: Still needed? 
+	currentCollection = DIYInfoObj[DIYKeysArray[DIYQueryCounter]];
+	
+	if (DIYQueryCounter <= NoOfDIYQueriesToDo){
+		DIYQueryCounter++;
+		DIYQuery();
+	}
+	else {
+		console.log("PRINT OUT COLLECTIONS");
+		console.log(collections);
+		console.log("AUDIT TRAIL IS");
+		console.log(auditTrail);
+		console.log("THIS ARRAY TRACKS WHETHER I'M ADDING DUPLICATES SOMEHOW");
+		eliminateDuplicates(IDArray);
+		console.log(IDArray);
+		
+		
+		console.log("SUM ARRAY IS");
+		console.log(sumArray);
+		setTimeout(function(){
+	gapi.client.analytics.data.ga.get({
+		'ids': 'ga:64453574',
+		'start-date': startdate,
+		'end-date': enddate,
+		'filters': 'ga:pagePath=~transcribe/scripto/transcribe/',
+		'max-results': '2000',
+		'dimensions': 'ga:pagePath',
+		'metrics': 'ga:uniquePageviews',			
+		}).execute(drewTest);
+	}, 1000);
+	}
+}
+
+function drewTest(results){
+	console.log("drewTest results");
+	console.log(results);
+	testGAArray = [];
+	var itemObjGA = {} //Use for Google Analytics
+	
+	/*
+	if (results.rows){
+		rowTracker = 0; 
+		while (rowTracker < results.rows.length){
+			currResult = results.rows[rowTracker];
+			
+			itemURLArray = currResult[0].split ( '/' );
+			itemURLIdSub = itemURLArray.pop();
+			itemURLId = itemURLArray.pop();
+			testGAArray.push(itemURLId);
+			rowTracker++;
+		}
+	}
+	*/
+	
+	totalViews = 0;	
+	if (results.rows){
+		
+		rowTracker = 0; 
+		while (rowTracker < results.rows.length){
+			currResult = results.rows[rowTracker];
+			
+			itemURLArray = currResult[0].split ( '/' );
+			itemURLIdSub = itemURLArray.pop();
+			itemURLId = itemURLArray.pop();
+			
+			currentPageviews = parseInt(currResult[1]);
+			if (itemObjGA[itemURLId]){ 
+				itemObjGA[itemURLId] += currentPageviews;
+			}
+			else {
+				itemObjGA[itemURLId] = currentPageviews;
+			}
+			totalViews += currentPageviews;
+			//testGAArray.push(itemURLId);
+			rowTracker++;
+		}
+	}
+	
+
+	//testGAArray.sort();
+	//console.log('testGAArray is');
+	//console.log(testGAArray);
+	//console.log('arraydiff is');
+	//console.log(IDArray.diff(testGAArray));
+	
+	console.log("item object generated by diyresponse is!");
+	console.log(itemObj);
+	console.log("total pageviews generated by diyresponse is!");
+	console.log(totalPageviews);
+	console.log("item object generated by drewTest is!");
+	console.log(itemObjGA);
+	console.log("total pageviews generated by drewtest is");
+	console.log(totalViews);
+	
+	
+}
+
+function DIYQuery(){
+	setTimeout(function(){
+	gapi.client.analytics.data.ga.get({
+		'ids': 'ga:64453574',
+		'start-date': startdate,
+		'end-date': enddate,
+		'filters': 'ga:pagePath=~transcribe/scripto/transcribe/' + DIYKeysArray[DIYQueryCounter],
+		'dimensions': 'ga:pageTitle, ga:pagePath',
+		'metrics': 'ga:uniquePageviews',			
+		}).execute(DIYResponse);
+	}, 1000);
+}
 function DIYResponse(results){
 	console.log(results);
 	console.log("RESULTS ROWS");
@@ -637,18 +757,25 @@ function DIYResponse(results){
 	
 		//iterating through the rows using a while loop
 		rowTracker = 0;
+		itemPageviews = 0;
+		
 		while (rowTracker < results.rows.length){
 		
 			currResult=results.rows[rowTracker];
 			console.log('RESULT ROW ' + rowTracker);
 			//console.log(currResult);
-
+			
+			//Used for testing
+	
+			
 			if (currResult[2]){
 			
 				newPageviews = parseInt(currResult[2]);
+				totalPageviews += newPageviews;
 
 				//console.log("NEW PAGEVIEWS");
 				collections[currentCollection]["pageviews"] += newPageviews;
+				itemPageviews += newPageviews;
 				
 				itemURLArray = currResult[1].split ( '/' );
 				itemURLIdSub = itemURLArray.pop();
@@ -656,20 +783,32 @@ function DIYResponse(results){
 				
 				auditObj = {itemID: itemURLId, itemSubID: itemURLIdSub, pageviews: newPageviews, currentCollection: currentCollection};
 				
+				//I want an array similar to Google Analytics array when I search for transcribe/scripto/transcribe
+				IDArray.push(currResult[1]);
+				sumArrayObj = [];
+				//sumArrayObj[0] = currResult[1]; //the page path
+				//sumArrayObj[0] = newPageviews; 
+				//sumArray.push(sumArrayObj);
+				
+				
 				auditTrail[currentCollection].push(auditObj);
 				
-			
-				//This code is to try to test how the totals are being determined
 
 			}
 			
 			rowTracker++;
+			
+		
 		}	
+		
+		itemObj[DIYKeysArray[DIYQueryCounter]] = itemPageviews;
+
 		
 	} 
 	if (results.totalResults == 0){
 		zeroCounter++;
 	}
+	DIYQueryResolver();
 
 	
 }

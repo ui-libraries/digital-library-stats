@@ -141,6 +141,9 @@
 				} else if ( action == "fa" ) {
 					filepath = "reports/finding_aids/" + reportName;
 				}
+				else if ( action == "diy") {
+					filepath = "reports/diy_stats/" + reportName;
+				}
 
 				initiateCollectionsArray( filepath, action );
 			}
@@ -198,6 +201,10 @@
 					$( "#radio" ).hide();
 					$( "#table-filter" ).show();
 				}
+				else if ( action == "diy" ){
+					$( "#table-filter" ).hide();
+				}
+				
 
 				sortCollectionsArray();
 				setSubtitle();
@@ -206,19 +213,21 @@
 			}
 
 			function calculatePPI() {
-
-				//calculate pageviews per item
-				for ( var i = 0; i < collections.length; i++ ) {
-					var ppi;
-					if ( isNaN( collections[i][ "pageviews" ] ) ) {
-						ppi = 0;
-					} else {
-						ppi = collections[i][ "pageviews" ] / collections[i][ "items" ];
+			
+				if (action != "diy"){
+					//calculate pageviews per item
+					for ( var i = 0; i < collections.length; i++ ) {
+						var ppi;
+						if ( isNaN( collections[i][ "pageviews" ] ) ) {
+							ppi = 0;
+						} else {
+							ppi = collections[i][ "pageviews" ] / collections[i][ "items" ];
+						}
+						//create display-friendly ppi with 4 decimal places
+						ppi = ppi.toFixed(4);
+						
+						collections[i][ "ppi" ] = ppi;
 					}
-					//create display-friendly ppi with 4 decimal places
-					ppi = ppi.toFixed(4);
-					
-					collections[i][ "ppi" ] = ppi;
 				}
 			}
 
@@ -257,6 +266,9 @@
 				} else if ( action == "fa" ) {
 					tableHeaders = ['Collection Guide Title', 'Pageviews<br/>(unique)', 'Archives'];
 				}
+				else if (action == "diy") {
+					tableHeaders = ['DIY Collection', 'Pageviews<br/>(unique)'];
+				}
 				table.push( '<table class="tablesorter">' );
 				table.push( '<thead><tr>' );
 				for ( var i = 0; i < tableHeaders.length; i++ ) {
@@ -294,7 +306,13 @@
 							table.push( '</tr>' );
 
 						}					
-					}				
+					}
+					else if (action == "diy" ) {
+							table.push( '<tr>' );
+							table.push( '<td class="collectionTitle">',array[i][ "name" ],'</td>'  );
+							table.push( '<td class="num">',array[i][ "pageviews" ],'</td>'  ); //pageviews
+							table.push( '</tr>' );
+					}
 				}				
 				table.push( '</tbody>' );
 			}
@@ -550,6 +568,7 @@
 					<select name="report-type" id="report-type">
 						<option value="dc" selected="selected">Digital Collections</option>
 						<option value="fa">Collection Guides</option>
+						<option value="diy">DIY History</option>
 					</select>
 				</div>	
 				<div class="param">
