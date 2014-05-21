@@ -634,9 +634,11 @@ function DIYQueryResolver(){
 
 	queryIndex = i; //TODO: Still needed? 
 	currentCollection = DIYInfoObj[DIYKeysArray[DIYQueryCounter]];
+	reportProgressDIY(DIYQueryCounter);
 	
 	if (DIYQueryCounter <= NoOfDIYQueriesToDo){
 		DIYQuery();
+
 	}
 	else {
 		console.log("PRINT OUT COLLECTIONS");
@@ -937,6 +939,15 @@ function reportProgress( index ) {
 		"Processing step " + currentQuery + " of " +  totalQueries +
 		"... " + ( collections.length - ( index + 1 ) ) + " seconds remaining.";
 }
+
+function reportProgressDIY( index ) {
+	document.getElementById( "progress" ).innerHTML = 
+		"Processing step " + index + " of " +  NoOfDIYQueriesToDo +
+		"... " + ( NoOfDIYQueriesToDo - ( index + 1 ) ) + " seconds remaining.";
+
+}
+
+
 
 function clearProgress() {
 	//clear progress display
