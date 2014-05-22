@@ -1,3 +1,7 @@
+/* The idea of the application is to gather Google Analytics data for three types of collection -- Iowa Digital Library collections (digital.lib.uiowa.edu), finding aids (which are located in two different places -- hence the two different queries for finding aids that you'll see below) and DIY History collections (diyhistory.lib.uiowa.edu).   */
+
+//Global variables
+
 var collections = [];  //information about each collection
 var finalCollections = [];  //the array to be used for a Google Analytics API query
 var dates = []; //the dates checked on the html form
@@ -20,6 +24,8 @@ var sumArray = [];//Just for debugging
 var itemObj = {}; //Append pageviews per item to object while iterating
 var totalPageviews = 0;
 
+//End global variables
+
 //Add trim function to string
 if(typeof(String.prototype.trim) === "undefined")
 {
@@ -32,9 +38,9 @@ if(typeof(String.prototype.trim) === "undefined")
 
 
 function getOutstandingReports() {
-//generate a list of outstanding reports
-//display results as checklist in admin.html when user selects an option
-
+//Generate a list of outstanding reports, display results as checklist in admin.html when user selects an option
+	console.log("HIIII");
+	console.log(queryTypeGetReports);
 	$.ajax({
 		type: "POST",
 		url: "readDirectory.php",
@@ -56,6 +62,9 @@ function getOutstandingReports() {
 				$( "#outstanding > ul" ).html( datesNeeded.join( '' ) );
 				$( "#make-api-call-button" ).show();
 			} 
+			else {
+				$( "#outstanding > ul" ).html('<li><em>There are no outstanding reports.</em></li>');
+			}
 
 			return true;
 		},
@@ -66,6 +75,7 @@ function getOutstandingReports() {
 	});
 }
 
+//These parsing functions are used to format dates for display (getOutstandingReports) and for Google Analytics queries (setDates)
 function parseYear( dateVal ) {
 	return dateVal.substring( 0, 4 );
 }
@@ -323,6 +333,8 @@ function handleProfiles( results ) {
 	if ( !results.code ) {
 		if ( results && results.items && results.items.length ) {
 
+			console.log("HANDLE PROFILES");
+			console.log(results.items);
 			// Get the first Profile ID
 			var firstProfileId = results.items[0].id;
 
@@ -354,8 +366,9 @@ function handleProfiles( results ) {
 			}	
 			else {
 				//Digital collections case
-				i = 0;
-				
+				queryIndex = 0;
+				digCollQueryResolver();
+				/*
 				var interval = setInterval( function() {
 					queryIndex = i; 
 					console.log( i + ". " + collections[i][ "name" ] )
@@ -367,6 +380,7 @@ function handleProfiles( results ) {
 						clearInterval( interval );
 					}
 				}, 3000 );
+				*/
 			}
 
 		} else {
@@ -378,6 +392,28 @@ function handleProfiles( results ) {
 }
 
 /* Query the Core Reporting API */
+
+//
+function digCollQueryResolver(){ 
+	if (queryIndex < collections.length){
+		var collectionId = collections[queryIndex][ "alias" ];
+		queryCoreReportingApi( collectionId );
+		reportProgress( queryIndex );
+	}
+	else {  //if this is the last item in this query
+
+		updateFinalCollections();
+
+		console.log( "recheck=" + recheck );
+		
+		if ( recheck < 2 ) {
+			checkFailedQueries();
+		} else {
+			writeToJSONFile( "digital_collections" );  
+			//reEvaluateUserInput(); //check to see if there are other query requests
+		} 
+	}
+}
 
 function queryCoreReportingAPIdiy( results ) {
 	gapi.client.analytics.data.ga.get({
@@ -392,18 +428,20 @@ function queryCoreReportingAPIdiy( results ) {
 	}).execute(handleCoreReportingResults);
 }
 
-function queryCoreReportingApi( profileId, colId ) {
+function queryCoreReportingApi( colId ) {
 	console.log( 'Querying Core Reporting API.' );
-
+	
 	// Use the Analytics Service Object to query the Core Reporting API
 	// Unique pageviews and visitors
+	setTimeout(function(){
 	gapi.client.analytics.data.ga.get({
-		'ids': 'ga:' + profileId,
+		'ids': 'ga:3923133',
 		'start-date': startdate,
 		'end-date': enddate,
 		'metrics': 'ga:uniquePageviews,ga:visitors',
 		'filters': 'ga:pagePath=@/' + colId + '/;ga:pagePath!@search'
 	}).execute( handleCoreReportingResults );
+	}, 1000);
 
 }
 
@@ -454,9 +492,8 @@ function handleCoreReportingResults( results ) {
 
 function saveResults( results ) {
 
-	console.log( "saving results" );
-	
-	console.log('AND THE RESULTS ARE')
+	console.log( "saveResults called.  The results are:" );
+
 	console.log(results)
 
 	if ( results.rows && results.rows.length ) {
@@ -468,20 +505,10 @@ function saveResults( results ) {
 	} else {
 		console.log( 'No results found' );
 	}
+	
+	queryIndex++;
 
-	if ( queryIndex == ( collections.length - 1 ) ) {  //if this is the last item in this query
-
-		updateFinalCollections();
-
-		console.log( "recheck=" + recheck );
-		
-		if ( recheck < 2 ) {
-			checkFailedQueries();
-		} else {
-			writeToJSONFile( "digital_collections" );  
-			//reEvaluateUserInput(); //check to see if there are other query requests
-		} 
-	}
+	digCollQueryResolver();
 }
 
 function saveResultsFa( results ) {
@@ -644,13 +671,13 @@ function DIYQueryResolver(){
 		'max-results': '2000',
 		'dimensions': 'ga:pagePath',
 		'metrics': 'ga:uniquePageviews',			
-		}).execute(resultTest);
+		}).execute(DIYResultTest);
 	}, 1000);
 	}
 
 }
 
-function resultTest(results){
+function DIYResultTest(results){
 	//Comparing the results of a generalized Google Analytics query to the results of the application to make sure the numbers are (about) right
 	console.log("resultTest results");
 	console.log(results);
@@ -689,9 +716,9 @@ function resultTest(results){
 	console.log(itemObj);
 	console.log("total pageviews generated by diyresponse is!");
 	console.log(totalPageviews);
-	console.log("item object generated by resultTest is!");
+	console.log("item object generated by DIYResultTest is!");
 	console.log(itemObjGA);
-	console.log("total pageviews generated by resultTest is");
+	console.log("total pageviews generated by DIYResultTest is");
 	console.log(totalTestViews);
 	
 	finalCollections = collections;
@@ -821,7 +848,7 @@ function updateFinalCollections() {
 }
 
 function checkFailedQueries() {
-
+	console.log("check failed queries called");
 	//increment recheck 
 	recheck ++;
 
@@ -840,6 +867,9 @@ function checkFailedQueries() {
 	if ( tempArray.length > 0 ) {
 		initiateQuery();
 	} 
+	else {
+		writeToJSONFile("digital_collections");
+	}
 }
 
 function writeToJSONFile( myDirectory ) {
