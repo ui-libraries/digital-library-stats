@@ -6,18 +6,21 @@ var enddate;  //the date on which to end the Google analytics query
 var queryIndex; //the index of the current collection being queried
 var recheck = 0;  //this integer keeps track of the number of times a query needs to be checked for API failure
 var queryType = "dc";  //this holds the type of query the user wants to make (indicated by the menu selection)
+var queryTypeGetReports = "dc";
 var faQuery = "1";  //this hold the current finding aid query (2 queries must be made)
 var currentCollectionID = '';
-var auditTrail = {"Pioneer Lives": [], "Civil War Diaries and Letters": [], "Szathmary Culinary Manuscripts and Cookbooks": [], "Iowa Women’s Lives: Letters and Diaries": [], "Building the Transcontinental Railroad": [], "Nile Kinnick Collection": [], "World War II Diaries and Letters": []}; //Just for testing
-var zeroCounter = 0;
-var DIYQueryCounter = 0;
-var NoOfDIYQueriesToDo = 0;
-var DIYKeysArray = [];
-var sumArray = [];//Just for debugging
 
+//All of the below are used to debug DIY querying functionality
+var auditTrail = {"Pioneer Lives": [], "Civil War Diaries and Letters": [], "Szathmary Culinary Manuscripts and Cookbooks": [], "Iowa Women’s Lives: Letters and Diaries": [], "Building the Transcontinental Railroad": [], "Nile Kinnick Collection": [], "World War II Diaries and Letters": []}; //Just for testing
+var zeroCounter = 0; //Used for testing purposes to see how many queries return zero results
+var DIYQueryCounter = 0; //Number of queries performed already when user searches by DIY History
+var NoOfDIYQueriesToDo = 0; //Number of total queries to be performed with a DIY query
+var DIYKeysArray = []; //Just for debugging
+var sumArray = [];//Just for debugging
 var itemObj = {}; //Append pageviews per item to object while iterating
 var totalPageviews = 0;
 
+//Add trim function to string
 if(typeof(String.prototype.trim) === "undefined")
 {
     String.prototype.trim = function() 
@@ -28,31 +31,14 @@ if(typeof(String.prototype.trim) === "undefined")
 
 
 
-function eliminateDuplicates(arr) {
-  var i,
-      len=arr.length,
-      out=[],
-      obj={};
-
-  for (i=0;i<len;i++) {
-    obj[arr[i]]=0;
-  }
-  for (i in obj) {
-    out.push(i);
-  }
-  return out;
-}
-
-//TODO: remove extraneous console.logs 
-
 function getOutstandingReports() {
 //generate a list of outstanding reports
-//display results as checklist
+//display results as checklist in admin.html when user selects an option
 
 	$.ajax({
 		type: "POST",
 		url: "readDirectory.php",
-		data: {action: queryType},
+		data: {action: queryTypeGetReports},
 		dataType: "json",
 		success: function( data ) {
 			var datesNeeded = [];
@@ -90,7 +76,7 @@ function parseMonthNum( dateVal ) {
 
 function parseMonthAbbv( dateVal ) {
 //this function receives a month as a numerical value and 
-//returns the month as a three-letter abbreviation
+//returns the month as a three-letter abbreviation.  There is no real reason for this to be a switch statement instead of an array.  
 	
 	var month = parseMonthNum( dateVal );
 
@@ -164,17 +150,14 @@ function initiateContext() {
 		initiateQuery();  
 	}
 	else if ( queryType == "diy" ) {
+	
+		//For the other query types, this is handled in initiatecollectionsarray
 
 		console.log( "initiate context for DIY History" );
-		//pioneer lives, szathmary culinary manuscripts and cookbooks, iowa women's lives: letters and diaries, building the transcontinental railroad, civil war diaries, nile kinnick collection
-		//"name":"African American Women in Iowa Digital Collection","alias":"aawiowa","items":1498
 		
 		//Trying to mimic format here.  
 		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0}, "World War II Diaries and Letters": {"name": "World War II Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0}};
 		
-		console.log("TESTING COLLECTIONS");
-		console.log(collections["Pioneer Lives"]);
-		console.log(collections["Pioneer Lives"]["pageviews"]);
 		for ( var i = 0; i < collections.length; i++ ) {
 			collections[i][ "pageviews" ] = 0;
 			collections[i][ "visitors" ] = 0;
@@ -365,8 +348,6 @@ function handleProfiles( results ) {
 				'dimensions': 'ga:pageTitle, ga:pagePath',
 				'filters': 'ga:pagePath=~transcribe/items/show/\\d\\d?\\d?\\d?$',
 				'metrics': 'ga:uniquePageviews',			
-				//'filters': 'ga:pagePath=~transcribe/items/show/'
-				//'metrics': 'ga:uniquePageviews,ga:visitors',
 				}).execute(function(r){
 					queryCoreReportingAPIdiy();
 				});
@@ -426,6 +407,7 @@ function queryCoreReportingApi( profileId, colId ) {
 
 }
 
+//Finding aids must be queried in two different locations (collguides.lib.uiowa.edu and lib.uiowa.edu) to get all the data, at least for the time being.  Note the different ids for the two queries below, which can be looked up in Google Analytics
 function queryCoreReportingApiFa( profileId ) {
 	console.log( 'Querying Core Reporting API for finding aids.' );
 	// Use the Analytics Service Object to query the Core Reporting API
@@ -580,6 +562,7 @@ function saveResultsFa( results ) {
 	}
 }
 
+/*This function stores the relationships between items and collections in a  object called DIYInfoObj.  Once built and turned into an array, this information will be used to parse the URLs of individual pages to be transcribed to extract the item they belong to, then associate that item with a collection so that pageviews by collection can be tabulated.*/
 function saveResultsDIY (results) {
 
 	console.log(results);
@@ -942,8 +925,8 @@ function reportProgress( index ) {
 
 function reportProgressDIY( index ) {
 	document.getElementById( "progress" ).innerHTML = 
-		"Processing step " + index + " of " +  NoOfDIYQueriesToDo +
-		"... " + ( NoOfDIYQueriesToDo - ( index + 1 ) ) + " seconds remaining.";
+		"Processing step " + (index - 1) + " of " +  NoOfDIYQueriesToDo +
+		"... " + ( NoOfDIYQueriesToDo - ( index - 1 ) ) + " seconds remaining.";
 
 }
 

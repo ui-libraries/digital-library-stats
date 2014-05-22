@@ -23,7 +23,7 @@
 				$( "#make-api-call-button, #authorize-button" ).button();
 				$( "#selectable" ).selectable({
 					selected: function() {
-						queryType = $( ".ui-selected" ).attr( "id" );
+						queryTypeGetReports = $( ".ui-selected" ).attr( "id" );
 						getOutstandingReports();
 						outputToPage( "" );
 						clearProgress();
