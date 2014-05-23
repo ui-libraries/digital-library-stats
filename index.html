@@ -71,6 +71,45 @@
 					}
 				});
 			}
+			
+			function refreshTimePeriods() {
+				action = document.getElementById( "report-type" ).value;
+				timeAction = '';
+				if ( action == "dc" ) {
+					timeAction = "digital_collections";
+				} else if ( action == "fa" ) {
+					timeAction = "finding_aids";
+				}
+				else if ( action == "diy") {
+					timeAction = "diy_history";
+				}
+				
+				console.log(timeAction);
+				$.ajax({
+					type: "POST",
+					url: "getReports.php",
+					data: {action: timeAction},
+					dataType: "json",
+					success: function( data ) {
+						document.getElementById( "time-period" ).innerHTML = '';
+						$.each( data, function( key, val ) {
+
+							if ( val != "." && val != ".." ) {
+
+								document.getElementById( "time-period" ).innerHTML += 
+									"<option value='" + val + "'>" +
+									parseMonthAbbv( val ) + " " + parseYear( val ) +
+									"</option>";
+							}
+						});
+						return true;
+					},
+					error: function( xhr, textStatus, errorThrown ) {
+						console.log( xhr + " " + textStatus + " " + errorThrown );
+						return false;
+					}
+				});
+			}
 
 			function parseYear( dateVal ) {
 				return dateVal.substring( 0, 4 );
@@ -565,7 +604,7 @@
 			<div id="form">
 				<div class="param">
 					<div class="instructions">1. Select a report type:</div>
-					<select name="report-type" id="report-type">
+					<select name="report-type" id="report-type" onchange="refreshTimePeriods()">
 						<option value="dc" selected="selected">Digital Collections</option>
 						<option value="fa">Collection Guides</option>
 						<option value="diy">DIY History</option>
@@ -583,9 +622,9 @@
 
 			<div id="tabs">
 				<ul>
-					<li><a href="#table">Table</a></li>
-					<li><a href="#graph">Graph</a></li>
-					<li><a href="#exp">Explanation of Statistics</a></li>
+					<li><a class="menu" href="#table">Table</a></li>
+					<li><a class="menu" href="#graph">Graph</a></li>
+					<li><a class="menu" href="#exp">Explanation of Statistics</a></li>
 				</ul>
 			
 				<div id="table">
