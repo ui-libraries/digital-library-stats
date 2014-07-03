@@ -17,12 +17,15 @@ var currentCollectionID = '';
 //All of the below are used to debug DIY querying functionality
 var auditTrail = {"Pioneer Lives": [], "Civil War Diaries and Letters": [], "Szathmary Culinary Manuscripts and Cookbooks": [], "Iowa Women’s Lives: Letters and Diaries": [], "Building the Transcontinental Railroad": [], "Nile Kinnick Collection": [], "World War II Diaries and Letters": []}; //Just for testing
 var zeroCounter = 0; //Used for testing purposes to see how many queries return zero results
+var DIYQueryTracker = 0; //Tracks queries while iterating through item array
 var DIYQueryCounter = 0; //Number of queries performed already when user searches by DIY History
 var NoOfDIYQueriesToDo = 0; //Number of total queries to be performed with a DIY query
 var DIYKeysArray = []; //Just for debugging
 var sumArray = [];//Just for debugging
+var DIYTestId = {};
 var itemObj = {}; //Append pageviews per item to object while iterating
 var totalPageviews = 0;
+var queryItemPages = false;
 
 //End global variables
 
@@ -149,6 +152,7 @@ function initiateContext() {
 	// set variables necessary for all queries
 	$( "#make-api-call-button" ).button( "disable" );
 	getDates();
+	queryType = $( ".ui-selected" ).attr( "id" );
 
 	if ( queryType == "dc" ) {
 		console.log( "initiate context for digital collections" );
@@ -166,7 +170,7 @@ function initiateContext() {
 		console.log( "initiate context for DIY History" );
 		
 		//Trying to mimic format here.  
-		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0}, "World War II Diaries and Letters": {"name": "World War II Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0}};
+		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"name": "Civil War Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0}, "World War II Diaries and Letters": {"name": "World War II Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0}};
 		
 		for ( var i = 0; i < collections.length; i++ ) {
 			collections[i][ "pageviews" ] = 0;
@@ -391,9 +395,8 @@ function handleProfiles( results ) {
 	}
 }
 
-/* Query the Core Reporting API */
 
-//
+//Iterate through the digital collections to be queried
 function digCollQueryResolver(){ 
 	if (queryIndex < collections.length){
 		var collectionId = collections[queryIndex][ "alias" ];
@@ -415,18 +418,6 @@ function digCollQueryResolver(){
 	}
 }
 
-function queryCoreReportingAPIdiy( results ) {
-	gapi.client.analytics.data.ga.get({
-	'ids': 'ga:64453574',
-	'start-date': startdate,
-	'end-date': enddate,
-	'dimensions': 'ga:pageTitle, ga:pagePath',
-	'filters': 'ga:pagePath=~transcribe/items/show/\\d\\d?\\d?\\d?$',
-	'metrics': 'ga:uniquePageviews',			
-	//'filters': 'ga:pagePath=~transcribe/items/show/'
-	//'metrics': 'ga:uniquePageviews,ga:visitors',
-	}).execute(handleCoreReportingResults);
-}
 
 function queryCoreReportingApi( colId ) {
 	console.log( 'Querying Core Reporting API.' );
@@ -444,6 +435,8 @@ function queryCoreReportingApi( colId ) {
 	}, 1000);
 
 }
+
+//The queryCoreReporting functions below get the information from Google Analytics
 
 //Finding aids must be queried in two different locations (collguides.lib.uiowa.edu and lib.uiowa.edu) to get all the data, at least for the time being.  Note the different ids for the two queries below, which can be looked up in Google Analytics
 function queryCoreReportingApiFa( profileId ) {
@@ -473,6 +466,19 @@ function queryCoreReportingApiFa2() {
 	}).execute( handleCoreReportingResults );
 }
 
+function queryCoreReportingAPIdiy( results ) {
+	gapi.client.analytics.data.ga.get({
+	'ids': 'ga:64453574',
+	'start-date': startdate,
+	'end-date': enddate,
+	'dimensions': 'ga:pageTitle, ga:pagePath',
+	'filters': 'ga:pagePath=~transcribe/items/show/\\d\\d?\\d?\\d?$',
+	'metrics': 'ga:uniquePageviews',			
+	//'filters': 'ga:pagePath=~transcribe/items/show/'
+	//'metrics': 'ga:uniquePageviews,ga:visitors',
+	}).execute(handleCoreReportingResults);
+}
+
 function handleCoreReportingResults( results ) {
 	if ( results.error ) {
 		console.log( 'There was an error querying core reporting API: ' + results.message );
@@ -490,6 +496,7 @@ function handleCoreReportingResults( results ) {
 
 /* Output the results */
 
+//This only saves results for digital collections.  Finding aids and DIY history pages are below
 function saveResults( results ) {
 
 	console.log( "saveResults called.  The results are:" );
@@ -589,51 +596,58 @@ function saveResultsFa( results ) {
 	}
 }
 
-/*This function stores the relationships between items and collections in a  object called DIYInfoObj.  Once built and turned into an array, this information will be used to parse the URLs of individual pages to be transcribed to extract the item they belong to, then associate that item with a collection so that pageviews by collection can be tabulated.*/
+/*This function stores the relationships between items and collections in a object called DIYInfoObj.  Once built and turned into an array, this information will be used to parse the URLs of individual pages to be transcribed to extract the item they belong to, then associate that item with a collection so that pageviews by collection can be tabulated.  Ultimately, the result is stored in the array titled collections*/
 function saveResultsDIY (results) {
 
 	console.log(results);
 	console.log(collections);
 	
 	DIYInfoObj = {}
-	
-	rowLength = results.rows.length
 
-	
 	for (var j = 0; j < results.rows.length; j++) {
 	
 		itemTitle = results.rows[j][0];
+		
+		//Titles are in this format: DIYHistory | Transcribe | Iowa Women’s Lives: Letters and Diaries | Iowa Byington Reed diary, January 1, 1916-December 12, 1919
 		itemTitleArray = itemTitle.split( '|' );
-		//console.log("LENGTH IS ");
-		//console.log(itemTitleArray.length);
-		if (itemTitleArray.length == 4){ //ignoring old titles
-			itemTitleArray.pop();
-			collectionName = itemTitleArray.pop();
+
+		if (itemTitleArray.length == 4){ //Ignoring old titles that did not include the collection information in them
+		
+			itemTitleArray.pop(); //We want the third item in a four-item array
+			collectionName = itemTitleArray.pop(); 
+			
+			//Trim function is added to string at top of file (not there in default)
 			collectionName = collectionName.trim(); 
 			
-			itemURL = results.rows[j][1]
+			//Get the item ID from the URL of a file.  An example URL: http://diyhistory.lib.uiowa.edu/transcribe/items/show/157 -- 157 is the id
+			itemURL = results.rows[j][1];
 			itemURLArray = itemURL.split ( '/' );
-
 			itemURLid = itemURLArray.pop();
 			itemURLid = itemURLid.trim();
-						
-			if ((DIYInfoObj[itemURLid]) == undefined) {
+			
+			//Add item to DIYInfoObj if it hasn't already been added and assuming collectionName is set
+			if (((DIYInfoObj[itemURLid]) == undefined) && (collectionName != '')){
 				DIYInfoObj[itemURLid] = collectionName;
 			}
 		}	
 	}
 	
-	
+	//Debugging statement in console
 	console.log("OBJECT WITH MAPPINGS BETWEEN COLLECTION AND ITEM IDS IS:");
 	console.log(DIYInfoObj);
 	console.log("LENGTH OF THIS OBJECT WITH MAPPINGS IS");
 	console.log(Object.keys(DIYInfoObj).length); 
 	
-	NoOfDIYQueriesToDo = Object.keys(DIYInfoObj).length; 
-	i = 0;
+	//Set number of queries to perform.  For every collection, we go through the array of items twice -- once to query the item landing pages, and once to query the files associated with an item
+	NoOfDIYQueriesToDo = Object.keys(DIYInfoObj).length * 2; 
+	//NoOfDIYQueriesToDo = 5;
+	
+	//Chose to iterate over array instead of properties of object. So DIY query counter is incremented and all the keys in DIYKeysArray are queried for
+	//DIYInfoObj is used to look up the collections of these items.  
 	DIYKeysArray = Object.keys(DIYInfoObj);
 	console.log("DIYKeysArray is!");
 	console.log(DIYKeysArray);
+	
 	DIYQueryResolver();
 		
 			
@@ -642,43 +656,91 @@ function saveResultsDIY (results) {
 
 function DIYQueryResolver(){
 
-	queryIndex = i; //TODO: Still needed? 
-	currentCollection = DIYInfoObj[DIYKeysArray[DIYQueryCounter]];
+	//If halfway point, then go back to beginning of keys array and switch to querying item landing pages
+	if (DIYQueryTracker == (NoOfDIYQueriesToDo / 2)){
+		DIYQueryTracker = 0;
+		queryItemPages = true;
+	}
+	
+	currentCollection = DIYInfoObj[DIYKeysArray[DIYQueryTracker]];
 	reportProgressDIY(DIYQueryCounter);
 	
-	if (DIYQueryCounter <= NoOfDIYQueriesToDo){
-		DIYQuery();
-
+	if  (DIYQueryCounter <= NoOfDIYQueriesToDo){
+		
+		if (queryItemPages == true){
+			DIYQueryItemLandingPage();
+		}
+		else {
+			DIYQuery();
+		}
 	}
 	else {
-		console.log("PRINT OUT COLLECTIONS");
-		console.log(collections);
-		console.log("AUDIT TRAIL IS");
-		console.log(auditTrail);
+		//Print out debugging stuff once queries completed
+		//console.log("PRINT OUT COLLECTIONS");
+		//console.log(collections);
+		//console.log("AUDIT TRAIL IS");
+		//console.log(auditTrail);
+		//console.log("TEST ID ARRAY IS");
+		//console.log(DIYTestId);
 		
 		
+		//console.log("SUM ARRAY IS");
+		//console.log(sumArray);
 		
-		console.log("SUM ARRAY IS");
-		console.log(sumArray);
 		
-		
-		setTimeout(function(){
-	gapi.client.analytics.data.ga.get({
-		'ids': 'ga:64453574',
-		'start-date': startdate,
-		'end-date': enddate,
-		'filters': 'ga:pagePath=~transcribe/scripto/transcribe/',
-		'max-results': '2000',
-		'dimensions': 'ga:pagePath',
-		'metrics': 'ga:uniquePageviews',			
-		}).execute(DIYResultTest);
-	}, 1000);
+			setTimeout(function(){
+		gapi.client.analytics.data.ga.get({
+			'ids': 'ga:64453574',
+			'start-date': startdate,
+			'end-date': enddate,
+			'filters': 'ga:pagePath=~transcribe/collections/show/',
+			'max-results': '2000',
+			'dimensions': 'ga:pageTitle, ga:pagePath',
+			'metrics': 'ga:uniquePageviews',	
+			}).execute(DIYCollectionCheck);
+		}, 1000);
 	}
 
 }
 
-function DIYResultTest(results){
-	//Comparing the results of a generalized Google Analytics query to the results of the application to make sure the numbers are (about) right
+function DIYCollectionCheck(results){
+	//Query the collection landing pages, then finalize the report
+	console.log("FINAL RESULTS ARE");
+	console.log(results);
+	if (results.rows){
+	
+		//iterating through the rows by using a while loop and incrementing rowTracker
+		rowTracker = 0;
+		
+		
+		while (rowTracker < results.rows.length){
+		
+			currResult=results.rows[rowTracker];
+	
+			//Split the HTML title to get the current collection
+			titleArray = currResult[0].split( '|' );
+			//currentCollection = titleArray.pop();
+			//currentCollection = currentCollection.trim();
+			
+			console.log(titleArray);
+			if (titleArray.length > 1){
+				currentCollection = titleArray.pop();
+				currentCollection = currentCollection.trim();
+			}
+			else {
+				currentCollection = '';
+			}
+			//console.log('&' + currentCollection + '&');		
+			if ((currResult[2]) && (currentCollection !== '') && (currentCollection !== '404 Page Not Found')){
+				newPageviews = parseInt(currResult[2]);
+				collections[currentCollection]["pageviews"] += newPageviews;
+			}
+		
+			rowTracker++;
+		}
+	}
+	
+	/*
 	console.log("resultTest results");
 	console.log(results);
 	testGAArray = [];
@@ -720,23 +782,41 @@ function DIYResultTest(results){
 	console.log(itemObjGA);
 	console.log("total pageviews generated by DIYResultTest is");
 	console.log(totalTestViews);
-	
+	*/
 	finalCollections = collections;
 	writeToJSONFile("diy_history");
 }
 
+//Queries for the files associated with an item
 function DIYQuery(){
 	setTimeout(function(){
 	gapi.client.analytics.data.ga.get({
 		'ids': 'ga:64453574',
 		'start-date': startdate,
 		'end-date': enddate,
-		'filters': 'ga:pagePath=~transcribe/scripto/transcribe/' + DIYKeysArray[DIYQueryCounter] + '/',
+		'filters': 'ga:pagePath=~transcribe/scripto/transcribe/' + DIYKeysArray[DIYQueryTracker] + '/',
 		'dimensions': 'ga:pageTitle, ga:pagePath',
 		'metrics': 'ga:uniquePageviews',			
 		}).execute(DIYResponse);
 	}, 1000);
 } 
+
+//Queries the item landing page
+function DIYQueryItemLandingPage(){
+	//console.log("ITEM LANDING PAGE CALLED");
+	setTimeout(function(){
+	gapi.client.analytics.data.ga.get({
+		'ids': 'ga:64453574',
+		'start-date': startdate,
+		'end-date': enddate,
+		'filters': 'ga:pagePath=~items/show/' + DIYKeysArray[DIYQueryTracker],
+		'metrics': 'ga:uniquePageviews',			
+		'dimensions': 'ga:pageTitle, ga:pagePath',
+		}).execute(DIYResponse);
+	}, 1000);
+} 
+
+//Process DIY results
 function DIYResponse(results){
 
 	console.log(results);
@@ -748,7 +828,7 @@ function DIYResponse(results){
 	
 	//Track progress as each item is queried
 	console.log("DIY QUERY COUNTER IS");
-	console.log(DIYQueryCounter);
+	console.log(DIYQueryTracker);
 	
 	
 	//Where the rows are stored.  Prints "undefined" if no results are returned
@@ -781,32 +861,39 @@ function DIYResponse(results){
 				//Add pageviews to collection
 				collections[currentCollection]["pageviews"] += newPageviews;
 				
+				/*
+				//Debugging information
 				itemPageviews += newPageviews;
-				
-				
+
 				itemURLArray = currResult[1].split ( '/' );
 				itemURLIdSub = itemURLArray.pop();
 				itemURLId = itemURLArray.pop();
 				
+				//Different URL structure when querying item landing pages must be accommodated
+				if (queryItemPages == true){
+					itemURLIdSub = itemURLId;
+				}
+	
+				auditObj = {itemID: itemURLId, itemSubID: itemURLIdSub, pageviews: newPageviews, currentCollection: currentCollection};
+	
 				//This is the item being processed
 				console.log("itemURLId is " + itemURLId);
-				
-				
-				
-			
-				
-				auditObj = {itemID: itemURLId, itemSubID: itemURLIdSub, pageviews: newPageviews, currentCollection: currentCollection};
-				
-			
 				
 				sumArrayObj = [];
 				sumArrayObj[0] = currResult[1]; 
 				sumArrayObj[0] = newPageviews; 
 				sumArray.push(sumArrayObj);
 				
+				if (DIYTestId[currentCollection] == undefined){
+					DIYTestId[currentCollection] = new Array();
+					DIYTestId[currentCollection].push(itemURLId);
+				}
+				else {
+					DIYTestId[currentCollection].push(itemURLId);
+				}
 				
 				auditTrail[currentCollection].push(auditObj);
-				
+				*/
 
 			}
 			
@@ -815,7 +902,7 @@ function DIYResponse(results){
 		
 		}	
 		
-		itemObj[DIYKeysArray[DIYQueryCounter]] = itemPageviews;
+		itemObj[DIYKeysArray[DIYQueryTracker]] = itemPageviews;
 
 		
 	} 
@@ -824,6 +911,7 @@ function DIYResponse(results){
 	}
 	
 	//Increment DIY query counter
+	DIYQueryTracker++;
 	DIYQueryCounter++;
 	DIYQueryResolver();
 

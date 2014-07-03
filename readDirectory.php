@@ -31,28 +31,68 @@ header( 'Content-type: application/json');
 	
 	// check to see if directory exists
 	if ( is_dir( $dirName ) ) {
-	
-		// generate all possible report names formatted as YYYYMM
-		// assumes earliest possible report is Jan 2013
-		for ( $y = 2013; $y < (int)$currentYear; $y++ ) {
 		
-			for ( $m = 1; $m < 13; $m++ ) {
+		//DIY reports are only available from April 2014 onward, so they need to be handled as a special case.
+		if ( $action == "diy" ){
 			
-				if ( $m < 10 ) {
-					$m = "0" . (string)$m;
+			if ($currentYear == 2014){
+			
+				$monthEnd = $currentMonth;
+			}
+			else {
+				$monthEnd = 12;
+			}
+			//Handles 2014
+			for ( $mo = 4; $mo < $monthEnd; $mo++ ) {
+				
+				if ( $mo < 10 ) {
+					$mo = "0" . (string)$mo;
 				}
-				array_push( $possibleReports, ( (string)$y . (string)$m ) ); 
+				array_push( $possibleReports, ( $currentYear . (string)$mo ) );
+			}
+			
+			//Handles years after 2014
+			if ($currentYear > 2014){
+				for ( $y = 2015; $y <= (int)$currentYear; $y++ ) {
+					if ($y == $currentYear){
+						$monthEnd = $currentMonth;
+					}
+					else {
+						$monthEnd = 12;
+					}
+					for ( $mo = 1; $mo < $monthEnd; $mo++ ) {
+				
+						if ( $mo < 10 ) {
+							$mo = "0" . (string)$mo;
+						}
+						array_push( $possibleReports, ( $currentYear . (string)$mo ) );
+					}
+				}
+			}
+		}
+		else {
+			// generate all possible report names formatted as YYYYMM
+			// assumes earliest possible report is Jan 2013
+			for ( $y = 2013; $y < (int)$currentYear; $y++ ) {
+			
+				for ( $m = 1; $m < 13; $m++ ) {
+				
+					if ( $m < 10 ) {
+						$m = "0" . (string)$m;
+					}
+					array_push( $possibleReports, ( (string)$y . (string)$m ) ); 
+				}
+			}
+			
+			for ( $mo = 1; $mo < (int)$currentMonth; $mo++ ) {
+				
+				if ( $mo < 10 ) {
+					$mo = "0" . (string)$mo;
+				}
+				array_push( $possibleReports, ( $currentYear . (string)$mo ) );
 			}
 		}
 		
-		for ( $mo = 1; $mo < (int)$currentMonth; $mo++ ) {
-			
-			if ( $mo < 10 ) {
-				$mo = "0" . (string)$mo;
-			}
-			array_push( $possibleReports, ( $currentYear . (string)$mo ) );
-		}
-	
 		// open directory
 		$directory = opendir( $dirName ); 
 		
