@@ -357,18 +357,10 @@ function handleProfiles( results ) {
 				}
 
 			} else if ( queryType == "diy" ) {
-				console.log ("diy handle profiles!")
-				
-				gapi.client.analytics.data.ga.get({
-				'ids': 'ga:64453574',
-				'start-date': startdate,
-				'end-date': enddate,
-				'dimensions': 'ga:pageTitle, ga:pagePath',
-				'filters': 'ga:pagePath=~transcribe/items/show/\\d\\d?\\d?\\d?$',
-				'metrics': 'ga:uniquePageviews',			
-				}).execute(function(r){
-					queryCoreReportingAPIdiy();
-				});
+				console.log ("diy handle profiles!");
+
+				queryCoreReportingAPIdiy();
+
 			}	
 			else {
 				//Digital collections case
@@ -468,7 +460,7 @@ function queryCoreReportingApiFa2() {
 	}).execute( handleCoreReportingResults );
 }
 
-function queryCoreReportingAPIdiy( results ) {
+function queryCoreReportingAPIdiy( ) {
 	gapi.client.analytics.data.ga.get({
 	'ids': 'ga:64453574',
 	'start-date': startdate,
