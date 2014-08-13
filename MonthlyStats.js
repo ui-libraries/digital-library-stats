@@ -16,6 +16,7 @@ var currentCollectionID = '';
 
 //All of the below are used to debug DIY querying functionality
 var auditTrail = {"Pioneer Lives": [], "Civil War Diaries and Letters": [], "Szathmary Culinary Manuscripts and Cookbooks": [], "Iowa Women’s Lives: Letters and Diaries": [], "Building the Transcontinental Railroad": [], "Nile Kinnick Collection": [], "World War II Diaries and Letters": []}; //Just for testing
+var allowedCollections = ["Pioneer Lives", "Civil War Diaries and Letters", "Iowa Women’s Lives: Letters and Diaries", "Building the Transcontinental Railroad", "Nile Kinnick Collection", "Szathmary Culinary Manuscripts and Cookbooks"];
 var zeroCounter = 0; //Used for testing purposes to see how many queries return zero results
 var DIYQueryTracker = 0; //Tracks queries while iterating through item array
 var DIYQueryCounter = 0; //Number of queries performed already when user searches by DIY History
@@ -73,6 +74,7 @@ function getOutstandingReports() {
 		},
 		error: function( xhr, textStatus, errorThrown ) {
 			console.log( xhr + " " + textStatus + " " + errorThrown );
+			console.log("ERRORTOWN");
 			return false;
 		}
 	});
@@ -170,7 +172,7 @@ function initiateContext() {
 		console.log( "initiate context for DIY History" );
 		
 		//Trying to mimic format here.  
-		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Civil War Diaries and Letters": {"name": "Civil War Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0}, "World War II Diaries and Letters": {"name": "World War II Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0}};
+		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 0, "ppi": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 0, "ppi": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 0, "ppi": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 0, "ppi": 0}, "Civil War Diaries and Letters": {"name": "Civil War Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 0, "ppi": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 0, "ppi": 0}};
 		
 		for ( var i = 0; i < collections.length; i++ ) {
 			collections[i][ "pageviews" ] = 0;
@@ -626,11 +628,15 @@ function saveResultsDIY (results) {
 			itemURLid = itemURLid.trim();
 			
 			//Add item to DIYInfoObj if it hasn't already been added and assuming collectionName is set
-			if (((DIYInfoObj[itemURLid]) == undefined) && (collectionName != '')){
+			
+			inArray = $.inArray(collectionName, allowedCollections);
+			if (inArray != -1){
 				DIYInfoObj[itemURLid] = collectionName;
 			}
 		}	
 	}
+	
+	
 	
 	//Debugging statement in console
 	console.log("OBJECT WITH MAPPINGS BETWEEN COLLECTION AND ITEM IDS IS:");
@@ -660,6 +666,8 @@ function DIYQueryResolver(){
 	if (DIYQueryTracker == (NoOfDIYQueriesToDo / 2)){
 		DIYQueryTracker = 0;
 		queryItemPages = true;
+		console.log("HALFWAY POINT");
+		console.log(collections["Szathmary Culinary Manuscripts and Cookbooks"]["pageviews"]);
 	}
 	
 	currentCollection = DIYInfoObj[DIYKeysArray[DIYQueryTracker]];
@@ -687,7 +695,8 @@ function DIYQueryResolver(){
 		//console.log("SUM ARRAY IS");
 		//console.log(sumArray);
 		
-		
+		console.log("ALMOST DONE");
+		console.log(collections["Szathmary Culinary Manuscripts and Cookbooks"]["pageviews"]);
 			setTimeout(function(){
 		gapi.client.analytics.data.ga.get({
 			'ids': 'ga:64453574',
@@ -715,6 +724,7 @@ function DIYCollectionCheck(results){
 		
 		while (rowTracker < results.rows.length){
 		
+			allowedCollections = ["Pioneer Lives", "Civil War Diaries and Letters", "Szathmary Culinary Manuscripts and Cookbooks", "Iowa Women’s Lives: Letters and Diaries", "Building the Transcontinental Railroad", "Nile Kinnick Collection"];
 			currResult=results.rows[rowTracker];
 	
 			//Split the HTML title to get the current collection
@@ -731,9 +741,12 @@ function DIYCollectionCheck(results){
 				currentCollection = '';
 			}
 			//console.log('&' + currentCollection + '&');		
-			if ((currResult[2]) && (currentCollection !== '') && (currentCollection !== '404 Page Not Found')){
+			if ((currResult[2]) && (allowedCollections.indexOf(currentCollection) != -1)){
 				newPageviews = parseInt(currResult[2]);
 				collections[currentCollection]["pageviews"] += newPageviews;
+				console.log("NOUS AVONS FINI");
+				console.log(collections["Szathmary Culinary Manuscripts and Cookbooks"]["pageviews"]);
+				
 			}
 		
 			rowTracker++;
@@ -775,8 +788,8 @@ function DIYCollectionCheck(results){
 
 	
 	console.log("item object generated by diyresponse is!");
-	console.log(itemObj);
 	console.log("total pageviews generated by diyresponse is!");
+we	console.log(itemObj);
 	console.log(totalPageviews);
 	console.log("item object generated by DIYResultTest is!");
 	console.log(itemObjGA);
@@ -796,7 +809,7 @@ function DIYQuery(){
 		'end-date': enddate,
 		'filters': 'ga:pagePath=~transcribe/scripto/transcribe/' + DIYKeysArray[DIYQueryTracker] + '/',
 		'dimensions': 'ga:pageTitle, ga:pagePath',
-		'metrics': 'ga:uniquePageviews',			
+		'metrics': 'ga:uniquePageviews, ga:visitors'			
 		}).execute(DIYResponse);
 	}, 1000);
 } 
@@ -854,12 +867,15 @@ function DIYResponse(results){
 			if (currResult[2]){
 			
 				newPageviews = parseInt(currResult[2]);
+				newVisitors = parseInt(currResult[3]);
 				
 				//Add to total pageviews for testing purposes
 				totalPageviews += newPageviews;
 
 				//Add pageviews to collection
 				collections[currentCollection]["pageviews"] += newPageviews;
+				collections[currentCollection]["items"]++;
+				collections[currentCollection]["visitors"] += newVisitors;
 				
 				/*
 				//Debugging information
