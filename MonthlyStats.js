@@ -1,9 +1,9 @@
-/* The idea of the application is to gather Google Analytics data for three types of collection -- Iowa Digital Library collections (digital.lib.uiowa.edu), finding aids (which are located in two different places -- hence the two different queries for finding aids that you'll see below) and DIY History collections (diyhistory.lib.uiowa.edu).   */
+/* The idea of the application is to gather Google Analytics data for three types of collection -- Iowa Digital Library collections (digital.lib.uiowa.edu), finding aids (which are located in two different places -- hence the two different queries for finding aids that you'll see below) and DIY History collections (diyhistory.lib.uiowa.edu).  */
 
 //Global variables
 
 var collections = [];  //information about each collection
-var finalCollections = [];  //the array to be used for a Google Analytics API query
+var finalCollections = [];  //the array to be used to copy to a JSON file
 var dates = []; //the dates checked on the html form
 var startdate; //the date on which to start the Google analytics query
 var enddate;  //the date on which to end the Google analytics query
@@ -12,38 +12,16 @@ var recheck = 0;  //this integer keeps track of the number of times a query need
 var queryType = "dc";  //this holds the type of query the user wants to make (indicated by the menu selection)
 var queryTypeGetReports = "dc";
 var faQuery = "1";  //this hold the current finding aid query (2 queries must be made)
-var currentCollectionID = '';
 
-//All of the below are used to debug DIY querying functionality
-var auditTrail = {"Pioneer Lives": [], "Civil War Diaries and Letters": [], "Szathmary Culinary Manuscripts and Cookbooks": [], "Iowa Women’s Lives: Letters and Diaries": [], "Building the Transcontinental Railroad": [], "Nile Kinnick Collection": [], "World War II Diaries and Letters": []}; //Just for testing
+
+//Collections that we want to display currently.  Update as necessary!
 var allowedCollections = ["Pioneer Lives", "Civil War Diaries and Letters", "Iowa Women’s Lives: Letters and Diaries", "Building the Transcontinental Railroad", "Nile Kinnick Collection", "Szathmary Culinary Manuscripts and Cookbooks"];
-var zeroCounter = 0; //Used for testing purposes to see how many queries return zero results
-var DIYQueryTracker = 0; //Tracks queries while iterating through item array
-var DIYQueryCounter = 0; //Number of queries performed already when user searches by DIY History
-var NoOfDIYQueriesToDo = 0; //Number of total queries to be performed with a DIY query
-var DIYKeysArray = []; //Just for debugging
-var sumArray = [];//Just for debugging
-var DIYTestId = {};
-var itemObj = {}; //Append pageviews per item to object while iterating
-var totalPageviews = 0;
-var queryItemPages = false;
+
 
 //End global variables
 
-//Add trim function to string
-if(typeof(String.prototype.trim) === "undefined")
-{
-    String.prototype.trim = function() 
-    {
-        return String(this).replace(/^\s+|\s+$/g, '');
-    };
-}
-
-
-
 function getOutstandingReports() {
 //Generate a list of outstanding reports, display results as checklist in admin.html when user selects an option
-	console.log("HIIII");
 	console.log(queryTypeGetReports);
 	$.ajax({
 		type: "POST",
@@ -390,7 +368,7 @@ function handleProfiles( results ) {
 }
 
 
-//Iterate through the digital collections to be queried
+//Iterate through the digital collections to be queried, making the appropriate API calls
 function digCollQueryResolver(){ 
 	if (queryIndex < collections.length){
 		var collectionId = collections[queryIndex][ "alias" ];
@@ -412,6 +390,7 @@ function digCollQueryResolver(){
 	}
 }
 
+//Iterate through the DIY collections to be queried, making the appropriate API calls
 function DIYQueryResolver(){
 	if (queryIndex < allowedCollections.length){
 		currentCollection = allowedCollections[queryIndex];
@@ -473,6 +452,20 @@ function queryCoreReportingApiFa2() {
 }
 
 
+function DIYQuery(currentCollection){
+	setTimeout(function(){
+	gapi.client.analytics.data.ga.get({
+	'ids': 'ga:64453574',
+	'start-date': startdate,
+	'end-date': enddate,
+	'filters': 'ga:pageTitle=~' + currentCollection,
+	'metrics': 'ga:uniquePageviews, ga:visitors'			
+	}).execute(handleCoreReportingResults);
+	}, 1000);
+} 
+
+
+
 function handleCoreReportingResults( results ) {
 	if ( results.error ) {
 		console.log( 'There was an error querying core reporting API: ' + results.message );
@@ -509,9 +502,11 @@ function saveResults( results ) {
 	
 	queryIndex++;
 
+	//Calls digCollQueryResolver to check if additional queries are necessary 
 	digCollQueryResolver();
 }
 
+//This only saves results for finding aids.  DIY history is below
 function saveResultsFa( results ) {
 	
 	if ( results.rows && results.rows.length ) {
@@ -590,32 +585,25 @@ function saveResultsFa( results ) {
 	}
 }
 
-
+//Save results for DIYHistory
 function saveResultsDIY (results) {
+	console.log(results);
 	allResults = results.totalsForAllResults
 	collections[currentCollection]["pageviews"] += parseInt(allResults["ga:uniquePageviews"]);
+	collections[currentCollection]["visitors"] += parseInt(allResults["ga:visitors"]);
 	queryIndex++;
+	
+	//Check if additional queries need to be made
 	DIYQueryResolver();
 }
 
-function DIYQuery(currentCollection){
-	setTimeout(function(){
-	gapi.client.analytics.data.ga.get({
-	'ids': 'ga:64453574',
-	'start-date': startdate,
-	'end-date': enddate,
-	'dimensions': 'ga:pageTitle, ga:pagePath',
-	'filters': 'ga:pageTitle=~' + currentCollection,
-	'metrics': 'ga:uniquePageviews, ga:visitors'			
-	}).execute(handleCoreReportingResults);
-	}, 1000);
-} 
-
 
 function updateFinalCollections() {
+	//Final collections is either set (the if) or updated if already set.  It may need updating if some collections incorrectly list zero pageviews for a given month.  
 	if ( recheck == 0 ) {
 		finalCollections = collections;
 	} else {
+	//Update final collections with correct pageview information
 		for( var i = 0; i < finalCollections.length; i++ ) {
 			for( var j = 0; j < collections.length; j++ ) {
 				if ( finalCollections[i][ "alias" ] == collections[j][ "alias" ] ) {
@@ -627,6 +615,7 @@ function updateFinalCollections() {
 	}
 }
 
+//Probably not necessary anymore, but this functionality verifies that collections listed as zero pageviews should actually have zero pageviews
 function checkFailedQueries() {
 	console.log("check failed queries called");
 	//increment recheck 
