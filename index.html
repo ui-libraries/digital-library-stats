@@ -241,6 +241,7 @@
 					$( "#table-filter" ).show();
 				}
 				else if ( action == "diy" ){
+					calculatePPI();
 					$( "#table-filter" ).hide();
 				}
 				
@@ -253,7 +254,7 @@
 
 			function calculatePPI() {
 			
-				if (action != "diy"){
+					console.log("HIT IT");
 					//calculate pageviews per item
 					for ( var i = 0; i < collections.length; i++ ) {
 						var ppi;
@@ -264,10 +265,10 @@
 						}
 						//create display-friendly ppi with 4 decimal places
 						ppi = ppi.toFixed(4);
-						
+					
 						collections[i][ "ppi" ] = ppi;
 					}
-				}
+			
 			}
 
 
@@ -306,7 +307,7 @@
 					tableHeaders = ['Collection Guide Title', 'Pageviews<br/>(unique)', 'Archives'];
 				}
 				else if (action == "diy") {
-					tableHeaders = ['DIYH Collection', 'Pageviews<br/>(unique)'];
+					tableHeaders = ['DIY History Collection Title', 'Pageviews<br/>(unique)', 'Pages', 'Pageviews<br>per Page', 'Visitors'];
 				}
 				table.push( '<table class="tablesorter">' );
 				table.push( '<thead><tr>' );
@@ -348,8 +349,11 @@
 					}
 					else if (action == "diy" ) {
 							table.push( '<tr>' );
-							table.push( '<td class="collectionTitle">',array[i][ "name" ],'</td>'  );
-							table.push( '<td class="num">',array[i][ "pageviews" ],'</td>'  ); //pageviews
+							table.push( '<td class="DIYTitle">',array[i][ "name" ],'</td>'  );
+							table.push( '<td class="DIYData">',array[i][ "pageviews" ],'</td>'  ); //pageviews
+							table.push( '<td class="DIYData">',array[i][ "items" ],'</td>'  ); //total pages
+							table.push( '<td class="DIYData">',array[i][ "ppi" ],'</td>'  ); //pageviews per page
+							table.push( '<td class="DIYData">',array[i][ "visitors" ],'</td>'  ); //well, visitors!
 							table.push( '</tr>' );
 					}
 				}				
@@ -590,6 +594,16 @@
 			td.collectionTitle {
 				width: 60%;
 			}
+			
+			td.DIYTitle {
+				width: 40%
+			}
+			
+			td.DIYData {
+			
+			}
+			
+			
 			
 		</style>
 		
