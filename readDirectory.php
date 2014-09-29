@@ -32,17 +32,19 @@ header( 'Content-type: application/json');
 	// check to see if directory exists
 	if ( is_dir( $dirName ) ) {
 		
-		//DIY reports are only available from April 2014 onward, so they need to be handled as a special case.
+		//IMPORTANT!  DIY reports are only available from April 2014 onward, so they need to be handled as a special case.
 		if ( $action == "diy" ){
 			
+			//If we're in 2014, check only up to the current month
 			if ($currentYear == 2014){
 			
 				$monthEnd = $currentMonth;
 			}
+			//If it's 2015 or later (lol?), check all of 2014
 			else {
 				$monthEnd = 12;
 			}
-			//Handles 2014
+			//Handles just the year 2014
 			for ( $mo = 4; $mo < $monthEnd; $mo++ ) {
 				
 				if ( $mo < 10 ) {
@@ -51,7 +53,7 @@ header( 'Content-type: application/json');
 				array_push( $possibleReports, ( $currentYear . (string)$mo ) );
 			}
 			
-			//Handles years after 2014
+			//Handles years after 2014 if it's after 2014
 			if ($currentYear > 2014){
 				for ( $y = 2015; $y <= (int)$currentYear; $y++ ) {
 					if ($y == $currentYear){
@@ -114,24 +116,8 @@ header( 'Content-type: application/json');
 		// close directory
 		closedir( $directory ); 
 		
-		// add any possible reports that do not exists to neededReport array
-		foreach( $possibleReports as $po ) {
-			
-			$match = false;
-			
-			foreach( $existingReports as $ex ) {
-				if ( $po === $ex ) {
-					$match = true;
-				}
-			}
-			
-			if ( !$match ) {
-
-				array_push( $neededReports, $po );
-
-			}
-		}
-
+		$neededReports = array_diff($possibleReports, $existingReports);
+		
 		echo json_encode( $neededReports );
 
 		
