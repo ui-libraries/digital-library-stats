@@ -15,7 +15,7 @@ var faQuery = "1";  //this hold the current finding aid query (2 queries must be
 var submissionStats = {}; 
 
 //Collections that we want to display currently.  Update as necessary!
-var allowedCollections = ["Pioneer Lives", "Civil War Diaries and Letters", "Iowa Women’s Lives: Letters and Diaries", "Building the Transcontinental Railroad", "Nile Kinnick Collection", "Szathmary Culinary Manuscripts and Cookbooks"];
+var allowedCollections = ["Pioneer Lives", "Civil War Diaries and Letters", "Iowa Women’s Lives: Letters and Diaries", "Building the Transcontinental Railroad", "Nile Kinnick Collection", "Szathmary Culinary Manuscripts and Cookbooks", "World War I Diaries and Letters", "World War II Diaries and Letters"];
 
 
 //End global variables
@@ -150,7 +150,7 @@ function initiateContext() {
 		console.log( "initiate context for DIY History" );
 		
 		//Trying to mimic format here.  
-		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 2701, "submissions": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 8114, "submissions": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 9424, "submissions": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 1872, "submissions": 0}, "Civil War Diaries and Letters": {"name": "Civil War Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 7931, "submissions": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 1747, "submissions": 0}};
+		collections = {"Pioneer Lives": {"name": "Pioneer Lives", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 2279, "submissions": 0}, "Szathmary Culinary Manuscripts and Cookbooks": {"name": "Szathmary Culinary Manuscripts and Cookbooks", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 8381, "submissions": 0}, "Iowa Women’s Lives: Letters and Diaries": {"name": "Iowa Women’s Lives: Letters and Diaries", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 9519, "submissions": 0}, "Building the Transcontinental Railroad": {"name": "Building the Transcontinental Railroad", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 1872, "submissions": 0}, "Civil War Diaries and Letters": {"name": "Civil War Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 8827, "submissions": 0}, "Nile Kinnick Collection": {"name": "Nile Kinnick Collection", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 1747, "submissions": 0}, "World War I Diaries and Letters": {"name": "World War I Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 1100, "submissions": 0}, "World War II Diaries and Letters": {"name": "World War II Diaries and Letters", "alias": "whatev", "pageviews": 0, "visitors": 0, "items": 3854, "submissions": 0}};
 		
 		for ( var i = 0; i < collections.length; i++ ) {
 			collections[i][ "pageviews" ] = 0;

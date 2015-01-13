@@ -45,12 +45,12 @@ header( 'Content-type: application/json');
 				$monthEnd = 12;
 			}
 			//Handles just the year 2014
-			for ( $mo = 4; $mo < $monthEnd; $mo++ ) {
+			for ( $mo = 4; $mo <= $monthEnd; $mo++ ) {
 				
 				if ( $mo < 10 ) {
 					$mo = "0" . (string)$mo;
 				}
-				array_push( $possibleReports, ( $currentYear . (string)$mo ) );
+				array_push( $possibleReports, ( 2014 . (string)$mo ) );
 			}
 			
 			//Handles years after 2014 if it's after 2014
